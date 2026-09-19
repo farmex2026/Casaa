@@ -159,7 +159,7 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // ▼▼▼ Pegá acá el link de tu Apps Script (el que termina en /exec) ▼▼▼
-const API = 'PEGA_ACA_EL_LINK';
+const API = 'https://script.google.com/macros/s/AKfycbz8QVcWQeW5L7j2mrZbivVQo50ZZBrjFAgwvur8deY8JWVLzWAHnQDlNfMo4BRfaCl0/exec';
 // ▲▲▲
 
 async function run(fn, ...args){
