@@ -118,6 +118,27 @@
   input[type=range]{width:100%;accent-color:var(--warm);margin:0}
   .msg{grid-column:1/-1;color:var(--muted);text-align:center;padding:30px 0;align-self:center}
 
+  /* Horarios */
+  .tile{position:relative}
+  .t-prog{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:12px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
+  .t-prog svg{width:20px;height:20px}
+  .t-prog.act{color:var(--ice)}
+  .prog{font-size:.8rem;color:var(--ice);margin-top:4px}
+  #modal{position:fixed;inset:0;background:rgba(5,9,18,.72);display:none;align-items:center;justify-content:center;padding:20px;z-index:70}
+  #modal.show{display:flex}
+  #panel{width:100%;max-width:440px;max-height:90vh;overflow:auto;padding:22px;background:rgba(14,22,40,.94)}
+  #panel h2{margin:0 0 4px;font-weight:400;font-size:1.4rem}
+  #panel .sub{color:var(--muted);font-size:.9rem;margin:0 0 14px}
+  .hrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-top:1px solid var(--edge)}
+  .hrow small{display:block;color:var(--muted);font-size:.82rem;margin-top:2px}
+  .dos-h{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .dias{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+  .dia{width:40px;height:40px;border-radius:50%;border:1px solid var(--edge);background:transparent;color:var(--muted);cursor:pointer;font-size:.9rem}
+  .dia.act{background:var(--ice);color:#07101F;border-color:transparent}
+  input[type=time]{color-scheme:dark}
+  .fila-btn{display:flex;gap:10px;margin-top:16px}
+  .fila-btn>*{flex:1}
+
   /* Modo mover */
   body.editando .item{animation:temblar .26s ease-in-out infinite alternate;touch-action:none;cursor:grab}
   body.editando .item:nth-child(2n){animation-delay:-.13s}
@@ -195,6 +216,8 @@
 
 <section id="config" hidden></section>
 
+<div id="modal" onclick="if(event.target===this)cerrarHorarios()"><div id="panel" class="glass" role="dialog" aria-modal="true"></div></div>
+
 <div id="login">
   <div class="glass">
     <h2>Casa</h2>
@@ -233,6 +256,7 @@ try { KEY = localStorage.getItem('clave_luces') || ''; } catch(e){}
 const guardarLocal = k => { try { localStorage.setItem('clave_luces', k); } catch(e){} };
 let ORDEN = LS.get('orden_items', []);
 let DISENO = Object.assign({ reloj:true, clima:true, transito:true }, LS.get('diseno', {}));
+let HORARIOS = [], hDev = null, hDias = [0,1,2,3,4,5,6];
 let CLIMA = null, climaError = '', VISTA = LS.get('clima_vista', 'hoy');
 let DESTINO = LS.get('destino', ''), RECIENTES = LS.get('destinos', []), RUTA = null, rutaMsg = '';
 
@@ -255,6 +279,7 @@ const ICONOS = {
   nieve: () => SVG('<path d="M7 15.5h9.5a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 6.5 8.7 3.4 3.4 0 0 0 7 15.5z"/><path d="M8.5 19h.01M12 20.5h.01M15.5 19h.01" stroke-width="2.4"/>'),
   niebla: () => SVG('<path d="M4 9h16M3 13h18M5 17h14"/>')
 };
+const RELOJ = SVG('<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>');
 const FOCO = SVG('<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V16h5v-.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/>');
 
 /* ---------- Hora ---------- */
@@ -410,10 +435,19 @@ function crearItem(id){
   const usable = !d.error && d.online && d.sw;
   el.className = 'item tile glass' + (d.on ? ' on' : '') + (usable ? '' : ' off-line');
   el.tabIndex = usable ? 0 : -1; el.setAttribute('role', 'button');
+  const hs = HORARIOS.filter(x => x.dev === d.id && x.activo !== false);
+  const prog = hs.length ? '<div class="prog">⏰ ' + (hs[0].on || '—') + ' → ' + (hs[0].off || '—') + (hs.length > 1 ? ' (+' + (hs.length - 1) + ')' : '') + '</div>' : '';
   el.innerHTML = '<div class="bulb">' + FOCO + '</div><div><div class="name">' + esc(d.name) + '</div><div class="state">' +
-    (d.error ? 'Error: ' + esc(d.error) : !d.online ? 'Sin conexión' : d.on ? (d.br ? 'Encendida · ' + d.pct + '%' : 'Encendida') : 'Apagada') + '</div></div>';
+    (d.error ? 'Error: ' + esc(d.error) : !d.online ? 'Sin conexión' : d.on ? (d.br ? 'Encendida · ' + d.pct + '%' : 'Encendida') : 'Apagada') + '</div>' + prog + '</div>';
+  if (d.sw) {
+    const b = document.createElement('button');
+    b.className = 't-prog' + (hs.length ? ' act' : ''); b.innerHTML = RELOJ;
+    b.setAttribute('aria-label', 'Programar horario de ' + d.name);
+    b.onclick = e => { e.stopPropagation(); if (!EDIT) abrirHorarios(d.id); };
+    el.appendChild(b);
+  }
   if (usable) {
-    el.onclick = e => { if (!EDIT && e.target.tagName !== 'INPUT') toggle(d, el); };
+    el.onclick = e => { if (!EDIT && e.target.tagName !== 'INPUT' && !e.target.closest('.t-prog')) toggle(d, el); };
     el.onkeydown = e => { if (!EDIT && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(d, el); } };
     if (d.br && d.on) {
       const r = document.createElement('input');
@@ -443,6 +477,65 @@ async function apagarTodo(){
   document.querySelectorAll('.tile').forEach(t => t.classList.add('busy'));
   try { await run('allOff', KEY, enc.map(d => ({id:d.id, sw:d.sw}))); } catch(e) { clave(e); }
   cargarLuces();
+}
+
+/* ---------- Horarios ---------- */
+const LETRAS = ['D','L','M','M','J','V','S'];
+const NOMBRES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+function textoDias(ds){
+  const s = [...ds].sort().join(',');
+  if (ds.length === 7) return 'Todos los días';
+  if (s === '1,2,3,4,5') return 'Lunes a viernes';
+  if (s === '0,6') return 'Fines de semana';
+  return [...ds].sort().map(i => NOMBRES[i]).join(', ');
+}
+async function cargarHorarios(){
+  try { HORARIOS = await run('getHorarios', KEY) || []; render(); } catch(e) {}
+}
+function abrirHorarios(id){ hDev = devs.find(d => d.id === id); hDias = [0,1,2,3,4,5,6]; pintarHorarios(); $('modal').classList.add('show'); }
+function cerrarHorarios(){ $('modal').classList.remove('show'); hDev = null; }
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && hDev) cerrarHorarios(); });
+function pintarHorarios(msg, tipo){
+  const d = hDev, hs = HORARIOS.filter(x => x.dev === d.id);
+  $('panel').innerHTML =
+    '<h2>' + esc(d.name) + '</h2><p class="sub">Funciona aunque la tablet esté apagada.</p>' +
+    (hs.length ? hs.map(x =>
+      '<div class="hrow"><div><div>' + (x.on ? 'Enciende ' + x.on : '') + (x.on && x.off ? ' · ' : '') + (x.off ? 'Apaga ' + x.off : '') + '</div>' +
+      '<small>' + textoDias(x.dias) + '</small></div><div class="ctrl">' +
+      sw('ha_' + x.hid, x.activo !== false, 'Horario activo') +
+      '<button class="mini" onclick="borrarH(\'' + x.hid + '\')" aria-label="Borrar horario">✕</button></div></div>').join('')
+      : '<p class="sub">Todavía no hay horarios para esta luz.</p>') +
+    '<div class="hrow" style="display:block"><div class="dos-h">' +
+      '<div class="campo" style="margin-top:0"><label for="hOn">Encender a las</label><input class="inp" id="hOn" type="time"></div>' +
+      '<div class="campo" style="margin-top:0"><label for="hOff">Apagar a las</label><input class="inp" id="hOff" type="time"></div></div>' +
+      '<div class="campo"><label>Días</label><div class="dias">' +
+        LETRAS.map((l,i) => '<button class="dia' + (hDias.includes(i) ? ' act' : '') + '" onclick="toggleDia(' + i + ')" aria-pressed="' + hDias.includes(i) + '" aria-label="' + NOMBRES[i] + '">' + l + '</button>').join('') +
+      '</div></div>' +
+      '<div class="fila-btn"><button class="btn" onclick="guardarH()">Agregar horario</button><button class="btn-sec" onclick="cerrarHorarios()">Cerrar</button></div>' +
+      '<div class="nota ' + (tipo || '') + '" id="hMsg">' + (msg || '') + '</div></div>';
+  hs.forEach(x => { $('ha_' + x.hid).onchange = e => activarH(x, e.target.checked); });
+}
+function toggleDia(i){
+  const on = $('hOn').value, off = $('hOff').value;
+  hDias = hDias.includes(i) ? hDias.filter(x => x !== i) : [...hDias, i];
+  pintarHorarios(); $('hOn').value = on; $('hOff').value = off;
+}
+async function guardarH(){
+  const on = $('hOn').value, off = $('hOff').value;
+  if (!on && !off) return pintarHorarios('Elegí una hora para encender, apagar o las dos.', 'err');
+  $('hMsg').className = 'nota'; $('hMsg').textContent = 'Guardando…';
+  try {
+    HORARIOS = await run('guardarHorario', KEY, { dev: hDev.id, sw: hDev.sw, on, off, dias: hDias });
+    pintarHorarios('Horario guardado.', 'ok'); render();
+  } catch(e) { if (!clave(e)) { $('hMsg').className = 'nota err'; $('hMsg').textContent = e.message; } }
+}
+async function activarH(x, activo){
+  try { HORARIOS = await run('guardarHorario', KEY, Object.assign({}, x, { activo })); pintarHorarios(); render(); }
+  catch(e) { pintarHorarios(e.message, 'err'); }
+}
+async function borrarH(hid){
+  try { HORARIOS = await run('borrarHorario', KEY, hid); pintarHorarios('Horario borrado.', 'ok'); render(); }
+  catch(e) { pintarHorarios(e.message, 'err'); }
 }
 
 /* ---------- Mover como en el celular ---------- */
@@ -714,7 +807,7 @@ document.addEventListener('visibilitychange', mantenerEncendida);
 mantenerEncendida();
 
 /* ---------- Arranque y actualización ---------- */
-function iniciar(){ cargarLuces(); cargarClima(); cargarFondo(); if (DESTINO && DISENO.transito) buscarRuta(DESTINO, true); }
+function iniciar(){ cargarLuces(); cargarClima(); cargarFondo(); cargarHorarios(); if (DESTINO && DISENO.transito) buscarRuta(DESTINO, true); }
 fondoLocal();
 render();
 setInterval(reloj, 1000);
