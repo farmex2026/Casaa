@@ -39,20 +39,32 @@
          backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
 
   /* Barra superior */
-  .top{display:flex;justify-content:flex-end;padding:18px 26px 0;max-width:1320px;margin:auto}
-  .tabs{display:flex;padding:4px;gap:4px;border-radius:999px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 26px 0;max-width:1320px;margin:auto;flex-wrap:wrap}
+  .top-izq{display:flex;align-items:center;gap:12px;min-height:44px}
+  #count{color:var(--muted);font-size:.95rem}
+  .tabs{display:flex;padding:4px;gap:4px;border-radius:999px;margin-left:auto}
   .tabs button{background:transparent;border:0;color:var(--muted);padding:10px 18px;border-radius:999px;font-size:.95rem;cursor:pointer}
   .tabs button[aria-selected=true]{background:rgba(124,192,255,.16);color:var(--text)}
+  .btn-sec{white-space:nowrap;background:transparent;color:var(--text);border:1px solid var(--edge);padding:10px 16px;border-radius:999px;font-size:.92rem;cursor:pointer}
+  .btn-listo{white-space:nowrap;background:var(--ice);color:#07101F;border:0;padding:10px 20px;border-radius:999px;font-size:.95rem;font-weight:600;cursor:pointer}
+  .ayuda{color:var(--muted);font-size:.92rem}
 
-  /* Inicio */
-  #inicio{display:grid;gap:26px;padding:14px 26px 34px;max-width:1320px;margin:auto}
-  @media (min-width:900px){ #inicio{grid-template-columns:minmax(330px,.85fr) 1.4fr;align-items:start} }
-  .hora{font-weight:200;font-size:clamp(5.2rem,13vw,9.5rem);line-height:.9;letter-spacing:-.04em;
-        font-variant-numeric:tabular-nums;text-shadow:0 0 50px rgba(124,192,255,.35);margin:10px 0 6px}
-  .fecha{font-size:1.25rem;font-weight:300;color:var(--muted);margin-bottom:26px}
+  /* Tablero tipo pantalla de celular */
+  #inicio{max-width:1320px;margin:auto;padding:16px 26px 40px}
+  .tablero{display:grid;grid-template-columns:repeat(2,1fr);grid-auto-rows:minmax(150px,auto);gap:14px;grid-auto-flow:row dense}
+  @media (min-width:600px){ .tablero{grid-template-columns:repeat(4,1fr)} }
+  @media (min-width:1000px){ .tablero{grid-template-columns:repeat(6,1fr);grid-auto-rows:minmax(165px,auto)} }
+  .item{position:relative;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+  .w-reloj{grid-column:span 2;display:flex;flex-direction:column;justify-content:center;padding:4px 6px;border-radius:26px}
+  .w-clima{grid-column:span 2;grid-row:span 2}
+  @media (min-width:1000px){ .w-reloj{grid-column:span 3;grid-row:span 2} .w-clima{grid-column:span 3;grid-row:span 2} }
+  .hora{font-weight:200;font-size:4.8rem;line-height:.9;letter-spacing:-.04em;font-variant-numeric:tabular-nums;text-shadow:0 0 50px rgba(124,192,255,.35)}
+  .fecha{font-size:1.05rem;font-weight:300;color:var(--muted);margin-top:10px}
   .fecha::first-letter{text-transform:uppercase}
+  @media (min-width:600px){ .hora{font-size:6rem} }
+  @media (min-width:1000px){ .hora{font-size:clamp(7rem,9.5vw,10rem)} .fecha{font-size:1.3rem} }
 
-  .clima{padding:22px 24px}
+  .clima{padding:22px 24px;display:flex;flex-direction:column;justify-content:center}
   .c-main{display:flex;align-items:center;gap:18px}
   .c-main svg{width:72px;height:72px;color:var(--ice);flex:none;filter:drop-shadow(0 0 14px rgba(124,192,255,.4))}
   .c-temp{font-size:4rem;font-weight:200;line-height:1}
@@ -61,27 +73,60 @@
   .c-det{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid var(--edge)}
   .c-det b{display:block;font-weight:400;font-size:1.2rem}
   .c-det small{color:var(--muted);font-size:.82rem}
-  .c-city{color:var(--muted);font-size:.85rem;margin-top:14px}
+  .c-city{color:var(--muted);font-size:.85rem}
+  .c-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .seg.chico button{padding:5px 12px;font-size:.82rem}
+  .c-horas{display:flex;gap:4px;overflow-x:auto;margin-top:14px;padding-top:12px;border-top:1px solid var(--edge);scrollbar-width:none}
+  .c-horas>div{flex:1 0 44px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.8rem;color:var(--muted)}
+  .c-horas svg,.c-semana svg{width:24px;height:24px;color:var(--ice)}
+  .c-horas b{font-weight:400;color:var(--text);font-size:.95rem}
+  .ll{color:#8FD0FF;font-size:.78rem}
+  .c-semana{display:flex;flex-direction:column;gap:2px}
+  .c-dia{display:grid;grid-template-columns:44px 26px 34px 30px 1fr 30px;align-items:center;gap:8px;padding:5px 0;font-size:.95rem}
+  .c-dia .mn{color:var(--muted);text-align:right}
+  .c-dia .bar{position:relative;height:5px;border-radius:9px;background:rgba(255,255,255,.08)}
+  .c-dia .bar i{position:absolute;top:0;bottom:0;border-radius:9px;background:linear-gradient(90deg,#7CC0FF,#FFC36A)}
 
-  .luces-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:6px 2px 16px}
-  .luces-head h2{margin:0;font-weight:400;font-size:1.6rem}
-  #count{color:var(--muted);font-size:.95rem;margin-left:10px}
-  .btn-sec{white-space:nowrap;background:transparent;color:var(--text);border:1px solid var(--edge);padding:10px 16px;border-radius:999px;font-size:.92rem;cursor:pointer}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:14px}
-  @media (min-width:900px){ .grid{grid-template-columns:repeat(auto-fill,minmax(165px,1fr))} }
-  .tile{padding:20px 18px 18px;cursor:pointer;display:flex;flex-direction:column;gap:16px;min-height:150px;
-        transition:background .3s,border-color .3s,box-shadow .3s;user-select:none;-webkit-tap-highlight-color:transparent}
-  .bulb{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.06);color:var(--muted);transition:all .35s}
-  .bulb svg{width:26px;height:26px}
+  .w-transito{grid-column:span 2;grid-row:span 3;padding:18px;display:flex;flex-direction:column;gap:10px}
+  @media (min-width:1000px){ .w-transito{grid-column:span 3;grid-row:span 3} }
+  .t-head{display:flex;align-items:center;justify-content:space-between}
+  .t-tit{font-size:1.05rem}
+  .t-link{color:var(--ice);font-size:.88rem;text-decoration:none}
+  .ruta-form{display:flex;gap:8px}
+  .ruta-form .inp{padding:11px 14px;font-size:1rem}
+  .ruta-form .btn{width:auto;padding:11px 18px}
+  .chips{display:flex;gap:6px;flex-wrap:wrap}
+  .chip{border:1px solid var(--edge);background:rgba(8,14,28,.45);color:var(--text);border-radius:999px;padding:6px 12px;font-size:.82rem;cursor:pointer;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .t-res{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;min-height:1.6em}
+  .t-min{font-size:2.4rem;font-weight:300;line-height:1}
+  .t-info{color:var(--muted);font-size:.9rem}
+  .t-est{font-size:.88rem}
+  .t-mapa{flex:1;min-height:140px;width:100%;border:0;border-radius:16px;background:#0B1324}
+  body.editando .w-transito iframe{pointer-events:none}
+
+  .tile{padding:18px 16px 16px;cursor:pointer;display:flex;flex-direction:column;gap:14px;
+        transition:background .3s,border-color .3s,box-shadow .3s}
+  .bulb{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.06);color:var(--muted);transition:background .35s,box-shadow .35s,color .35s}
+  .bulb svg{width:24px;height:24px}
   .tile.on{background:var(--glass-hi);border-color:rgba(255,195,106,.4);box-shadow:0 10px 40px -12px rgba(255,170,80,.35)}
   .tile.on .bulb{background:var(--warm);color:#3A2708;box-shadow:0 0 34px 8px var(--warm-soft)}
-  .name{font-size:1.08rem;line-height:1.25}
+  .name{font-size:1.05rem;line-height:1.25}
   .state{color:var(--muted);font-size:.85rem;margin-top:2px}
   .tile.on .state{color:var(--warm)}
   .tile.busy{opacity:.55;pointer-events:none}
   .tile.off-line{opacity:.42;cursor:default}
   input[type=range]{width:100%;accent-color:var(--warm);margin:0}
-  .msg{grid-column:1/-1;color:var(--muted);text-align:center;padding:40px 0}
+  .msg{grid-column:1/-1;color:var(--muted);text-align:center;padding:30px 0;align-self:center}
+
+  /* Modo mover */
+  body.editando .item{animation:temblar .26s ease-in-out infinite alternate;touch-action:none;cursor:grab}
+  body.editando .item:nth-child(2n){animation-delay:-.13s}
+  body.editando .item input{pointer-events:none}
+  body.editando .w-reloj{outline:1px dashed rgba(130,180,255,.35);outline-offset:-1px}
+  @keyframes temblar{from{rotate:-.7deg}to{rotate:.7deg}}
+  .item.fantasma{opacity:.18}
+  .flotante{position:fixed!important;z-index:60;margin:0;pointer-events:none;animation:none!important;
+            transform:scale(1.05);box-shadow:0 30px 60px -18px rgba(0,0,0,.7);cursor:grabbing}
 
   /* Configuración */
   #config{max-width:640px;margin:auto;padding:18px 26px 40px}
@@ -112,14 +157,32 @@
   #login .glass{padding:26px;width:100%;max-width:360px}
   #login h2{margin:0 0 16px;font-weight:300;font-size:1.6rem}
 
+  #inicio.invertido>div:first-child{order:2}
+  @media (min-width:900px){ #inicio.invertido{grid-template-columns:1.4fr minmax(330px,.85fr)} }
+  #inicio.solo-luces{grid-template-columns:1fr!important}
+  #inicio.solo-luces>div:first-child{display:none}
+  .seg{display:flex;padding:3px;border-radius:999px;background:rgba(8,14,28,.55);border:1px solid var(--edge)}
+  .seg button{border:0;background:transparent;color:var(--muted);padding:8px 14px;border-radius:999px;cursor:pointer;font-size:.92rem}
+  .seg button.act{background:rgba(124,192,255,.18);color:var(--text)}
+  .ctrl{display:flex;align-items:center;gap:8px;flex:none}
+  .mini{width:38px;height:38px;border-radius:12px;border:1px solid var(--edge);background:transparent;color:var(--text);font-size:1.05rem;cursor:pointer}
+  .mini:disabled{opacity:.25;cursor:default}
   [hidden]{display:none!important}
-  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+  @media (prefers-reduced-motion:reduce){*{transition:none!important} body.editando .item{animation:none}}
 </style>
 </head>
 <body>
 <div id="fondo"></div>
 
 <div class="top">
+  <div class="top-izq" id="barraNormal">
+    <button class="btn-sec" onclick="apagarTodo()">Apagar todas</button>
+    <span id="count"></span>
+  </div>
+  <div class="top-izq" id="barraEdicion" hidden>
+    <button class="btn-listo" onclick="salirEdicion()">Listo</button>
+    <span class="ayuda">Arrastrá para mover</span>
+  </div>
   <div class="tabs glass" role="tablist">
     <button role="tab" id="tInicio" aria-selected="true" onclick="verTab('inicio')">Inicio</button>
     <button role="tab" id="tConfig" aria-selected="false" onclick="verTab('config')">Configuración</button>
@@ -127,18 +190,7 @@
 </div>
 
 <section id="inicio">
-  <div>
-    <div class="hora" id="hora">--:--</div>
-    <div class="fecha" id="fecha"></div>
-    <div class="clima glass" id="clima"><div class="c-mm">Cargando clima…</div></div>
-  </div>
-  <div>
-    <div class="luces-head">
-      <div><h2 style="display:inline">Luces</h2><span id="count"></span></div>
-      <button class="btn-sec" onclick="apagarTodo()">Apagar todas</button>
-    </div>
-    <div class="grid" id="grid"><div class="msg">Buscando tus luces…</div></div>
-  </div>
+  <div class="tablero" id="tablero"></div>
 </section>
 
 <section id="config" hidden></section>
@@ -158,7 +210,7 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-// ▼▼▼ Pegá acá el link de tu Apps Script (el que termina en /exec) ▼▼▼
+// ▼▼▼ Link de tu Apps Script (el que termina en /exec) ▼▼▼
 const API = 'https://script.google.com/macros/s/AKfycbz8QVcWQeW5L7j2mrZbivVQo50ZZBrjFAgwvur8deY8JWVLzWAHnQDlNfMo4BRfaCl0/exec';
 // ▲▲▲
 
@@ -171,9 +223,23 @@ async function run(fn, ...args){
   if (!j.ok) throw new Error(j.error);
   return j.result;
 }
-let devs = [], KEY = '', CFG = '', cfgData = null;
+
+const LS = {
+  get(k, def){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch(e){ return def; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+};
+let devs = null, KEY = '', CFG = '', cfgData = null;
 try { KEY = localStorage.getItem('clave_luces') || ''; } catch(e){}
 const guardarLocal = k => { try { localStorage.setItem('clave_luces', k); } catch(e){} };
+let ORDEN = LS.get('orden_items', []);
+let DISENO = Object.assign({ reloj:true, clima:true, transito:true }, LS.get('diseno', {}));
+let CLIMA = null, climaError = '', VISTA = LS.get('clima_vista', 'hoy');
+let DESTINO = LS.get('destino', ''), RECIENTES = LS.get('destinos', []), RUTA = null, rutaMsg = '';
+
+function ordenar(ids){
+  const pos = id => { const i = ORDEN.indexOf(id); return i < 0 ? 1e6 : i; };
+  return ids.map((id,i) => [id,i]).sort((a,b) => pos(a[0]) - pos(b[0]) || a[1] - b[1]).map(x => x[0]);
+}
 
 /* ---------- Íconos ---------- */
 const SVG = p => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' + p + '</svg>';
@@ -193,79 +259,290 @@ const FOCO = SVG('<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 
 
 /* ---------- Hora ---------- */
 function reloj(){
-  const n = new Date();
-  $('hora').textContent = n.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', hour12:false});
-  $('fecha').textContent = n.toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long'});
+  const n = new Date(), h = $('hora'), f = $('fecha');
+  if (h) h.textContent = n.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', hour12:false});
+  if (f) f.textContent = n.toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long'});
 }
 
 /* ---------- Clima ---------- */
 async function cargarClima(){
-  try {
-    const c = await run('getClima', KEY);
-    $('clima').innerHTML =
-      '<div class="c-main">' + (ICONOS[c.icono] || ICONOS.nube)(c.dia) +
-      '<div><div class="c-temp">' + c.temp + '°</div></div></div>' +
-      '<div class="c-desc">' + esc(c.desc) + '</div>' +
-      '<div class="c-mm">Máx ' + c.max + '° / Mín ' + c.min + '°</div>' +
-      '<div class="c-det"><div><b>' + c.sens + '°</b><small>Sensación</small></div>' +
-      '<div><b>' + c.hum + '%</b><small>Humedad</small></div>' +
-      '<div><b>' + c.viento + '</b><small>Viento km/h</small></div></div>' +
-      '<div class="c-city">' + esc(c.ciudad) + '</div>';
-  } catch(e) { if (!clave(e)) $('clima').innerHTML = '<div class="c-mm">No se pudo cargar el clima</div>'; }
+  try { CLIMA = await run('getClima', KEY); climaError = ''; }
+  catch(e) { if (clave(e)) return; climaError = 'No se pudo cargar el clima'; }
+  pintarClima();
+}
+function vistaClima(v){ VISTA = v; LS.set('clima_vista', v); pintarClima(); }
+function pintarClima(){
+  const w = document.querySelector('#tablero .w-clima');
+  if (w) w.innerHTML = climaHTML();
+}
+function climaHTML(){
+  const c = CLIMA;
+  if (!c) return '<div class="c-mm">' + (climaError || 'Cargando clima…') + '</div>';
+  const ico = (k, d) => (ICONOS[k] || ICONOS.nube)(d);
+  const head = '<div class="c-head"><span class="c-city">' + esc(c.ciudad) + '</span>' +
+    '<div class="seg chico"><button class="' + (VISTA === 'hoy' ? 'act' : '') + '" onclick="vistaClima(\'hoy\')">Hoy</button>' +
+    '<button class="' + (VISTA === 'semana' ? 'act' : '') + '" onclick="vistaClima(\'semana\')">Semana</button></div></div>';
+  if (VISTA === 'semana' && c.dias) {
+    const lo = Math.min(...c.dias.map(d => d.min)), hi = Math.max(...c.dias.map(d => d.max)), rango = Math.max(1, hi - lo);
+    return head + '<div class="c-semana">' + c.dias.map(d =>
+      '<div class="c-dia" title="' + esc(d.desc) + '"><span>' + d.nombre + '</span>' + ico(d.icono, true) +
+      '<span class="ll">' + (d.lluvia >= 20 ? d.lluvia + '%' : '') + '</span>' +
+      '<span class="mn">' + d.min + '°</span>' +
+      '<span class="bar"><i style="left:' + ((d.min - lo) / rango * 100) + '%;right:' + ((hi - d.max) / rango * 100) + '%"></i></span>' +
+      '<span>' + d.max + '°</span></div>').join('') + '</div>';
+  }
+  return head +
+    '<div class="c-main">' + ico(c.icono, c.dia) + '<div><div class="c-temp">' + c.temp + '°</div></div></div>' +
+    '<div class="c-desc">' + esc(c.desc) + '</div>' +
+    '<div class="c-mm">Máx ' + c.max + '° / Mín ' + c.min + '° · Sensación ' + c.sens + '°</div>' +
+    '<div class="c-mm">Humedad ' + c.hum + '% · Viento ' + c.viento + ' km/h</div>' +
+    (c.horas ? '<div class="c-horas">' + c.horas.map(x =>
+      '<div><small>' + x.h + '</small>' + ico(x.icono, x.dia) + '<b>' + x.temp + '°</b>' +
+      '<span class="ll">' + (x.lluvia >= 20 ? x.lluvia + '%' : '&nbsp;') + '</span></div>').join('') + '</div>' : '');
+}
+
+/* ---------- Tránsito ---------- */
+let elTransito = null;
+function crearTransito(){
+  const el = document.createElement('div');
+  el.className = 'item w-transito glass'; el.dataset.id = 'transito';
+  el.innerHTML =
+    '<div class="t-head"><span class="t-tit">Tránsito</span><a class="t-link" id="tLink" target="_blank" rel="noopener">Abrir en Maps</a></div>' +
+    '<div class="ruta-form"><input class="inp" id="destino" placeholder="¿A dónde vas?" autocomplete="off">' +
+    '<button class="btn" onclick="buscarRuta()">Ir</button></div>' +
+    '<div class="chips" id="chips"></div>' +
+    '<div class="t-res" id="tRes"></div>' +
+    '<iframe class="t-mapa" id="tMapa" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Mapa"></iframe>';
+  el.querySelector('#destino').value = DESTINO;
+  el.querySelector('#destino').addEventListener('keydown', e => { if (e.key === 'Enter') buscarRuta(); });
+  return el;
+}
+function pintarTransito(){
+  if (!elTransito) return;
+  const q = s => elTransito.querySelector(s);
+  q('#chips').innerHTML = RECIENTES.filter(d => d !== DESTINO).slice(0, 4)
+    .map(d => '<button class="chip" onclick="buscarRuta(this.dataset.d)" data-d="' + esc(d) + '">' + esc(d) + '</button>').join('');
+  const res = q('#tRes');
+  if (rutaMsg) { res.innerHTML = '<span class="t-info"></span>'; res.firstChild.textContent = rutaMsg; }
+  else if (!RUTA) res.innerHTML = '<span class="t-info">Escribí un destino para ver cuánto tardás.</span>';
+  else {
+    const llegada = new Date(Date.now() + RUTA.min * 60000).toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', hour12:false});
+    const extra = RUTA.min - RUTA.normal;
+    const est = !RUTA.transito ? ['Sin datos de tránsito', 'var(--muted)']
+      : extra >= 10 ? ['Tránsito pesado (+' + extra + ' min)', 'var(--err)']
+      : extra >= 4 ? ['Tránsito moderado (+' + extra + ' min)', 'var(--warm)']
+      : ['Tránsito fluido', '#8EE3B0'];
+    res.innerHTML = '<span class="t-min">' + RUTA.min + ' min</span>' +
+      '<span class="t-info">Llegás ' + llegada + ' · ' + esc(RUTA.km) + (RUTA.via ? ' · por ' + esc(RUTA.via) : '') + '</span>' +
+      '<span class="t-est" style="color:' + est[1] + '">' + est[0] + '</span>';
+  }
+  const o = RUTA ? RUTA.origen : '', d = RUTA ? RUTA.destino : '';
+  const src = RUTA ? 'https://maps.google.com/maps?saddr=' + encodeURIComponent(o) + '&daddr=' + encodeURIComponent(d) + '&layer=t&output=embed'
+                   : 'https://maps.google.com/maps?q=' + encodeURIComponent(CFG_CASA || 'Buenos Aires') + '&layer=t&z=13&output=embed';
+  const mapa = q('#tMapa');
+  if (mapa.dataset.src !== src) { mapa.dataset.src = src; mapa.src = src; }
+  q('#tLink').href = RUTA ? 'https://www.google.com/maps/dir/?api=1&origin=' + encodeURIComponent(o) + '&destination=' + encodeURIComponent(d) + '&travelmode=driving'
+                          : 'https://www.google.com/maps';
+}
+let CFG_CASA = LS.get('casa', '');
+async function buscarRuta(dest, silencioso){
+  if (dest === undefined) dest = elTransito ? elTransito.querySelector('#destino').value.trim() : DESTINO;
+  if (!dest) return;
+  DESTINO = dest; LS.set('destino', dest);
+  if (elTransito) elTransito.querySelector('#destino').value = dest;
+  RECIENTES = [dest, ...RECIENTES.filter(x => x !== dest)].slice(0, 6); LS.set('destinos', RECIENTES);
+  if (!silencioso) { rutaMsg = 'Calculando…'; pintarTransito(); }
+  try { RUTA = await run('getRuta', KEY, dest); rutaMsg = ''; }
+  catch(e) { if (clave(e)) return; RUTA = null; rutaMsg = e.message; }
+  pintarTransito();
 }
 
 /* ---------- Luces ---------- */
+let errorLuces = '';
 async function cargarLuces(){
-  try { devs = await run('getDevices', KEY); pintar(); }
-  catch(e) { if (!clave(e)) { $('grid').innerHTML = '<div class="msg"></div>'; $('grid').firstChild.textContent = 'Error: ' + e.message; } }
+  try { devs = await run('getDevices', KEY); errorLuces = ''; }
+  catch(e) { if (clave(e)) return; errorLuces = e.message; }
+  render();
 }
 
-function pintar(){
-  const g = $('grid'), vis = devs.filter(d => !d.hidden);
-  if (!vis.length){ g.innerHTML = '<div class="msg">No hay luces para mostrar. Activalas desde Configuración.</div>'; $('count').textContent=''; return; }
-  g.innerHTML = '';
-  vis.forEach(d => {
-    const t = document.createElement('div');
-    const usable = !d.error && d.online && d.sw;
-    t.className = 'tile glass' + (d.on ? ' on' : '') + (usable ? '' : ' off-line');
-    t.tabIndex = usable ? 0 : -1; t.setAttribute('role','button');
-    t.innerHTML = '<div class="bulb">' + FOCO + '</div><div><div class="name">' + esc(d.name) + '</div><div class="state">' +
-      (d.error ? 'Error: ' + esc(d.error) : !d.online ? 'Sin conexión' : d.on ? (d.br ? 'Encendida · ' + d.pct + '%' : 'Encendida') : 'Apagada') + '</div></div>';
-    if (usable){
-      t.onclick = e => { if (e.target.tagName !== 'INPUT') toggle(d, t); };
-      t.onkeydown = e => { if (e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(d, t); } };
-      if (d.br && d.on){
-        const r = document.createElement('input');
-        r.type='range'; r.min=1; r.max=100; r.value=d.pct; r.setAttribute('aria-label','Brillo de '+d.name);
-        r.onchange = () => brillo(d, t, +r.value);
-        t.appendChild(r);
-      }
-    }
-    g.appendChild(t);
+/* ---------- Tablero ---------- */
+let pendiente = false;
+function render(){
+  if (drag) { pendiente = true; return; }
+  const tb = $('tablero');
+  const vis = (devs || []).filter(d => !d.hidden);
+  const ids = ordenar([...(DISENO.reloj ? ['reloj'] : []), ...(DISENO.clima ? ['clima'] : []),
+                       ...vis.map(d => 'l:' + d.id), ...(DISENO.transito ? ['transito'] : [])]);
+  if (DISENO.transito && !elTransito) { elTransito = crearTransito(); }
+  const quedo = elTransito && elTransito.parentNode === tb && DISENO.transito ? elTransito : null;
+  [...tb.children].forEach(n => { if (n !== quedo) n.remove(); });
+  let antes = !!quedo;
+  ids.forEach(id => {
+    if (id === 'transito') { if (!quedo) tb.appendChild(elTransito); antes = false; return; }
+    const n = crearItem(id);
+    if (antes) tb.insertBefore(n, quedo); else tb.appendChild(n);
   });
+  if (!devs || errorLuces || !vis.length) {
+    const m = document.createElement('div'); m.className = 'msg';
+    m.textContent = errorLuces ? 'Error: ' + errorLuces : !devs ? 'Buscando tus luces…' : 'No hay luces para mostrar. Activalas desde Configuración.';
+    tb.appendChild(m);
+  }
+  if (DISENO.transito) pintarTransito();
+  reloj();
   const on = vis.filter(d => d.on).length;
-  $('count').textContent = on ? on + ' de ' + vis.length + ' encendida' + (on>1?'s':'') : 'Todas apagadas';
+  $('count').textContent = !devs ? '' : on ? on + ' de ' + vis.length + ' encendida' + (on > 1 ? 's' : '') : 'Todas apagadas';
+}
+
+function crearItem(id){
+  const el = document.createElement('div');
+  el.dataset.id = id;
+  if (id === 'reloj') {
+    el.className = 'item w-reloj';
+    el.innerHTML = '<div class="hora" id="hora">--:--</div><div class="fecha" id="fecha"></div>';
+    return el;
+  }
+  if (id === 'clima') {
+    el.className = 'item w-clima clima glass';
+    el.innerHTML = climaHTML();
+    return el;
+  }
+  const d = devs.find(x => 'l:' + x.id === id);
+  const usable = !d.error && d.online && d.sw;
+  el.className = 'item tile glass' + (d.on ? ' on' : '') + (usable ? '' : ' off-line');
+  el.tabIndex = usable ? 0 : -1; el.setAttribute('role', 'button');
+  el.innerHTML = '<div class="bulb">' + FOCO + '</div><div><div class="name">' + esc(d.name) + '</div><div class="state">' +
+    (d.error ? 'Error: ' + esc(d.error) : !d.online ? 'Sin conexión' : d.on ? (d.br ? 'Encendida · ' + d.pct + '%' : 'Encendida') : 'Apagada') + '</div></div>';
+  if (usable) {
+    el.onclick = e => { if (!EDIT && e.target.tagName !== 'INPUT') toggle(d, el); };
+    el.onkeydown = e => { if (!EDIT && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); toggle(d, el); } };
+    if (d.br && d.on) {
+      const r = document.createElement('input');
+      r.type = 'range'; r.min = 1; r.max = 100; r.value = d.pct; r.setAttribute('aria-label', 'Brillo de ' + d.name);
+      r.onchange = () => brillo(d, el, +r.value);
+      el.appendChild(r);
+    }
+  }
+  return el;
 }
 
 async function toggle(d, t){
   t.classList.add('busy');
-  try { await run('setPower', KEY, d.id, d.sw, !d.on); d.on = !d.on; pintar(); }
+  try { await run('setPower', KEY, d.id, d.sw, !d.on); d.on = !d.on; render(); }
   catch(e) { t.classList.remove('busy'); if (!clave(e)) alert('No se pudo cambiar: ' + e.message); }
 }
 
 async function brillo(d, t, pct){
   t.classList.add('busy');
-  try { await run('setBright', KEY, d.id, d.br, pct); d.pct = pct; pintar(); }
+  try { await run('setBright', KEY, d.id, d.br, pct); d.pct = pct; render(); }
   catch(e) { t.classList.remove('busy'); if (!clave(e)) alert('No se pudo cambiar el brillo: ' + e.message); }
 }
 
 async function apagarTodo(){
-  const enc = devs.filter(d => !d.hidden && d.on && d.sw);
+  const enc = (devs || []).filter(d => !d.hidden && d.on && d.sw);
   if (!enc.length) return;
   document.querySelectorAll('.tile').forEach(t => t.classList.add('busy'));
   try { await run('allOff', KEY, enc.map(d => ({id:d.id, sw:d.sw}))); } catch(e) { clave(e); }
   cargarLuces();
 }
+
+/* ---------- Mover como en el celular ---------- */
+let EDIT = false, drag = null, ultimoCambio = 0;
+const presion = { t:null, el:null, x:0, y:0, lx:0, ly:0 };
+
+function entrarEdicion(){
+  EDIT = true; document.body.classList.add('editando');
+  $('barraNormal').hidden = true; $('barraEdicion').hidden = false;
+}
+function salirEdicion(){
+  EDIT = false; document.body.classList.remove('editando');
+  $('barraNormal').hidden = false; $('barraEdicion').hidden = true;
+  if (pendiente) { pendiente = false; render(); }
+}
+
+function empezarArrastre(el, x, y){
+  const r = el.getBoundingClientRect();
+  const f = el.cloneNode(true);
+  f.classList.add('flotante'); f.removeAttribute('id');
+  f.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+  f.querySelectorAll('iframe').forEach(n => n.remove());
+  Object.assign(f.style, { width: r.width + 'px', height: r.height + 'px', left: r.left + 'px', top: r.top + 'px' });
+  document.body.appendChild(f);
+  el.classList.add('fantasma');
+  drag = { el, f, dx: x - r.left, dy: y - r.top };
+  try { navigator.vibrate && navigator.vibrate(25); } catch(e){}
+}
+
+function moverArrastre(x, y){
+  drag.f.style.left = (x - drag.dx) + 'px';
+  drag.f.style.top = (y - drag.dy) + 'px';
+  if (y > innerHeight - 70) scrollBy(0, 14); else if (y < 70) scrollBy(0, -14);
+  if (Date.now() - ultimoCambio < 150) return;
+  const t = document.elementFromPoint(x, y)?.closest('#tablero > .item');
+  if (!t || t === drag.el) return;
+  const hijos = [...$('tablero').children];
+  const a = hijos.indexOf(drag.el), b = hijos.indexOf(t);
+  ultimoCambio = Date.now();
+  flip(() => { if (a < b) t.after(drag.el); else t.before(drag.el); });
+}
+
+function soltar(){
+  const { el, f } = drag; drag = null;
+  const r = el.getBoundingClientRect();
+  f.style.transition = 'left .18s ease, top .18s ease, transform .18s ease';
+  f.style.left = r.left + 'px'; f.style.top = r.top + 'px'; f.style.transform = 'scale(1)';
+  setTimeout(() => { f.remove(); el.classList.remove('fantasma'); }, 190);
+  const nuevos = [...$('tablero').children].map(n => n.dataset.id).filter(Boolean);
+  ORDEN = [...nuevos, ...ORDEN.filter(id => !nuevos.includes(id))];
+  LS.set('orden_items', ORDEN);
+  if (pendiente && !EDIT) { pendiente = false; render(); }
+}
+
+function flip(cambio){
+  const hijos = [...$('tablero').children];
+  const antes = new Map(hijos.map(n => [n, n.getBoundingClientRect()]));
+  cambio();
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  hijos.forEach(n => {
+    const a = antes.get(n), b = n.getBoundingClientRect();
+    const dx = a.left - b.left, dy = a.top - b.top;
+    if (!dx && !dy) return;
+    n.style.transition = 'none';
+    n.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      n.style.transition = 'transform .22s ease'; n.style.transform = '';
+      setTimeout(() => { n.style.transition = ''; }, 240);
+    }));
+  });
+}
+
+function cancelarPresion(){ clearTimeout(presion.t); presion.t = null; presion.el = null; }
+
+$('tablero').addEventListener('pointerdown', e => {
+  const el = e.target.closest('#tablero > .item');
+  if (!el || (e.button && e.button !== 0)) return;
+  if (EDIT) { e.preventDefault(); empezarArrastre(el, e.clientX, e.clientY); return; }
+  if (e.target.tagName === 'INPUT') return;
+  cancelarPresion();
+  Object.assign(presion, { el, x: e.clientX, y: e.clientY, lx: e.clientX, ly: e.clientY });
+  presion.t = setTimeout(() => {
+    const p = presion.el; cancelarPresion();
+    if (!p) return;
+    entrarEdicion(); empezarArrastre(p, presion.lx, presion.ly);
+  }, 500);
+});
+document.addEventListener('pointermove', e => {
+  if (presion.t) {
+    presion.lx = e.clientX; presion.ly = e.clientY;
+    if (Math.hypot(e.clientX - presion.x, e.clientY - presion.y) > 10) cancelarPresion();
+  }
+  if (drag) moverArrastre(e.clientX, e.clientY);
+});
+const fin = () => { cancelarPresion(); if (drag) soltar(); };
+document.addEventListener('pointerup', fin);
+document.addEventListener('pointercancel', fin);
+document.addEventListener('touchmove', e => { if (drag) e.preventDefault(); }, { passive: false });
+$('tablero').addEventListener('contextmenu', e => e.preventDefault());
+$('inicio').addEventListener('click', e => { if (EDIT && !drag && !e.target.closest('.item')) salirEdicion(); });
 
 /* ---------- Clave de entrada ---------- */
 function clave(e){
@@ -285,9 +562,11 @@ $('k').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
 /* ---------- Pestañas ---------- */
 function verTab(t){
   const cfg = t === 'config';
+  if (cfg && EDIT) salirEdicion();
   $('inicio').hidden = cfg; $('config').hidden = !cfg;
+  $('barraNormal').style.visibility = cfg ? 'hidden' : '';
   $('tInicio').setAttribute('aria-selected', !cfg); $('tConfig').setAttribute('aria-selected', cfg);
-  if (cfg) puertaConfig(); else { CFG = ''; cfgData = null; }
+  if (cfg) puertaConfig(); else { CFG = ''; cfgData = null; render(); }
 }
 
 /* ---------- Configuración ---------- */
@@ -315,11 +594,17 @@ function sw(id, checked, label){
 
 function pintarConfig(){
   const c = cfgData;
+  const lista = ordenar(c.devices.map(d => 'l:' + d.id)).map(id => c.devices.find(d => 'l:' + d.id === id));
   $('config').innerHTML =
     '<h2>Configuración</h2>' +
-    '<div class="panel glass"><h3>Luces en la pantalla</h3><p>Elegí cuáles se ven en Inicio.</p>' +
-      (c.devices.length ? c.devices.map((d,i) =>
-        '<div class="fila"><span>' + esc(d.name) + '</span>' + sw('v'+i, !d.hidden, 'Mostrar ' + d.name) + '</div>').join('')
+    '<div class="panel glass"><h3>Pantalla de inicio</h3><p>Para mover cualquier cosa, mantenela presionada en Inicio y arrastrala. Se guarda en este equipo.</p>' +
+      '<div class="fila"><span>Mostrar reloj</span>' + sw('dReloj', DISENO.reloj, 'Mostrar reloj') + '</div>' +
+      '<div class="fila"><span>Mostrar clima</span>' + sw('dClima', DISENO.clima, 'Mostrar clima') + '</div>' +
+      '<div class="fila"><span>Mostrar tránsito</span>' + sw('dTransito', DISENO.transito, 'Mostrar tránsito') + '</div>' +
+      '<div class="fila"><span>Volver al orden original</span><button class="btn-sec" onclick="resetOrden()">Restablecer</button></div>' +
+    '</div>' +
+    '<div class="panel glass"><h3>Luces en la pantalla</h3><p>Elegí cuáles se ven en Inicio. Se guarda con "Guardar cambios".</p>' +
+      (lista.length ? lista.map(d => '<div class="fila"><span>' + esc(d.name) + '</span>' + sw('v_' + d.id, !d.hidden, 'Mostrar ' + d.name) + '</div>').join('')
         : '<p>No hay dispositivos en TUYA_DEVICES.</p>') +
     '</div>' +
     '<div class="panel glass"><h3>Clave para entrar</h3><p>Si la activás, la web la pide antes de mostrar las luces.</p>' +
@@ -335,22 +620,31 @@ function pintarConfig(){
       '<input type="range" id="osc" min="0" max="85" value="' + c.osc + '"></div>' +
       '<div class="nota" id="fMsg"></div>' +
     '</div>' +
+    '<div class="panel glass"><h3>Tránsito</h3><p>Desde dónde se calculan los viajes.</p>' +
+      '<div class="campo" style="margin-top:0"><label for="casa">Dirección de tu casa</label><input class="inp" id="casa" type="text" autocomplete="off" placeholder="Calle 123, Localidad"></div>' +
+    '</div>' +
     '<div class="panel glass"><h3>Clima</h3>' +
       '<div class="campo" style="margin-top:0"><label for="ciudad">Ciudad</label><input class="inp" id="ciudad" type="text" autocomplete="off"></div>' +
     '</div>' +
     '<button class="btn" onclick="guardarCfg()">Guardar cambios</button>' +
     '<div class="nota" id="cfgMsg"></div>';
-  $('nueva').value = c.clave; $('ciudad').value = c.ciudad;
+  $('nueva').value = c.clave; $('ciudad').value = c.ciudad; $('casa').value = c.casa || '';
   try { const d = localStorage.getItem('fondo_data'); if (d) { $('prev').style.backgroundImage = 'url("' + d + '")'; $('prev').textContent = ''; } } catch(e){}
   $('osc').oninput = () => { $('oscV').textContent = $('osc').value + '%'; aplicarFondo(undefined, +$('osc').value); };
+  $('dReloj').onchange = () => { DISENO.reloj = $('dReloj').checked; LS.set('diseno', DISENO); };
+  $('dClima').onchange = () => { DISENO.clima = $('dClima').checked; LS.set('diseno', DISENO); };
+  $('dTransito').onchange = () => { DISENO.transito = $('dTransito').checked; LS.set('diseno', DISENO); };
 }
+
+function resetOrden(){ ORDEN = []; LS.set('orden_items', ORDEN); $('cfgMsg').className = 'nota ok'; $('cfgMsg').textContent = 'Orden restablecido.'; }
 
 async function guardarCfg(){
   const c = cfgData, on = $('on').checked, clave = $('nueva').value.trim();
-  const ocultas = c.devices.filter((d,i) => !$('v'+i).checked).map(d => d.id);
+  const ocultas = c.devices.filter(d => !$('v_' + d.id).checked).map(d => d.id);
   const m = $('cfgMsg'); m.className = 'nota'; m.textContent = 'Guardando…';
   try {
-    const r = await run('guardarConfig', CFG, {on, clave, ciudad: $('ciudad').value, ocultas, osc: +$('osc').value});
+    const r = await run('guardarConfig', CFG, {on, clave, ciudad: $('ciudad').value, casa: $('casa').value, ocultas, osc: +$('osc').value});
+    CFG_CASA = $('casa').value.trim(); LS.set('casa', CFG_CASA); RUTA = null;
     try { localStorage.setItem('fondo_osc', $('osc').value); } catch(e){}
     c.osc = +$('osc').value;
     if (on) { KEY = clave; guardarLocal(clave); }
@@ -420,13 +714,15 @@ document.addEventListener('visibilitychange', mantenerEncendida);
 mantenerEncendida();
 
 /* ---------- Arranque y actualización ---------- */
-function iniciar(){ cargarLuces(); cargarClima(); cargarFondo(); }
+function iniciar(){ cargarLuces(); cargarClima(); cargarFondo(); if (DESTINO && DISENO.transito) buscarRuta(DESTINO, true); }
 fondoLocal();
-reloj(); setInterval(reloj, 1000);
+render();
+setInterval(reloj, 1000);
 iniciar();
-setInterval(() => { if (!document.hidden && !$('inicio').hidden) cargarLuces(); }, 5 * 60 * 1000);
+setInterval(() => { if (!document.hidden && !$('inicio').hidden && !EDIT) cargarLuces(); }, 5 * 60 * 1000);
 setInterval(() => { if (!document.hidden) cargarClima(); }, 15 * 60 * 1000);
-document.addEventListener('visibilitychange', () => { if (!document.hidden) iniciar(); });
+setInterval(() => { if (!document.hidden && DESTINO && DISENO.transito && !EDIT) buscarRuta(DESTINO, true); }, 5 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden && !EDIT) iniciar(); });
 </script>
 </body>
 </html>
