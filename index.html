@@ -128,10 +128,10 @@
   @media (min-width:1000px){ .ambs{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))} }
   .amb{position:relative;aspect-ratio:4/3;border-radius:20px;overflow:hidden;border:1px solid var(--edge);cursor:pointer;background:#0B1324}
   .amb .foto{position:absolute;inset:0;background-size:cover;background-position:center;
-       filter:grayscale(.55) brightness(.42) contrast(1.15) saturate(.5) hue-rotate(185deg);transition:filter .5s}
+       filter:grayscale(.35) brightness(.72) contrast(1.05) saturate(.7) hue-rotate(185deg);transition:filter .5s}
   .amb .velo{position:absolute;inset:0;transition:background .5s;
-       background:linear-gradient(180deg,rgba(10,20,45,.5),rgba(6,12,28,.86)),
-       repeating-linear-gradient(0deg,rgba(124,192,255,.07) 0 1px,transparent 1px 4px)}
+       background:linear-gradient(180deg,rgba(10,20,45,.3),rgba(6,12,28,.62)),
+       repeating-linear-gradient(0deg,rgba(124,192,255,.06) 0 1px,transparent 1px 4px)}
   .amb .marco{position:absolute;inset:8px;border-radius:14px;border:1px solid rgba(124,192,255,.22);transition:border-color .5s}
   .amb .marco::before,.amb .marco::after{content:'';position:absolute;width:20px;height:20px;border:2px solid var(--ice);opacity:.85;transition:border-color .5s}
   .amb .marco::before{top:-1px;left:-1px;border-right:0;border-bottom:0;border-radius:8px 0 0 0}
@@ -540,15 +540,14 @@ async function apagarTodo(){
 /* ---------- Ambientes con foto ---------- */
 function ambsHTML(){
   return '<div class="ambs">' + CASA.map(r => {
-    const l = (devs || []).find(d => AMBIENTES[d.id] === r.id && !d.hidden);
+    const l = (devs || []).find(d => AMBIENTES[d.id] === r.id);
     const on = l && l.on;
     const estado = !l ? 'Sin luz asignada' : !l.online ? 'Sin conexión' : on ? 'Encendida' : 'Apagada';
     return '<div class="amb' + (on ? ' on' : '') + (l ? '' : ' sinluz') + '" data-amb="' + r.id + '" role="button" tabindex="0">' +
       '<div class="foto" style="background-image:url(\'' + (FOTOS[r.id] || 'fotos/' + r.id + '.jpg') + '\')"></div>' +
       '<div class="velo"></div><div class="marco"></div>' +
       '<div class="txt"><div class="n">' + esc(r.n) + '</div><div class="e">' + estado + '</div></div>' +
-      '<div class="pt">' + FOCO + '</div>' +
-      '<label class="amb-edit" aria-label="Cambiar foto de ' + esc(r.n) + '">✎<input type="file" accept="image/*" onchange="subirFotoAmb(this,\'' + r.id + '\')"></label></div>';
+      '<div class="pt">' + FOCO + '</div></div>';
   }).join('') + '</div>';
 }
 function crearPlano(){
