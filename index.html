@@ -191,7 +191,7 @@
   .panel{padding:20px 22px;margin-bottom:16px}
   .panel h3{margin:0 0 4px;font-weight:600;font-size:1.05rem}
   .panel p{margin:0 0 14px;color:var(--muted);font-size:.92rem}
-  .fila{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 0;border-top:1px solid var(--edge)}
+  .fila{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--edge);flex-wrap:wrap}
   .fila:first-of-type{border-top:0}
   .campo{display:flex;flex-direction:column;gap:8px;margin-top:12px}
   .campo label{font-size:.92rem;color:var(--muted)}
@@ -224,6 +224,13 @@
   .ctrl{display:flex;align-items:center;gap:8px;flex:none}
   .mini{width:38px;height:38px;border-radius:12px;border:1px solid var(--edge);background:transparent;color:var(--text);font-size:1.05rem;cursor:pointer}
   .mini:disabled{opacity:.25;cursor:default}
+  .mini.file{position:relative;overflow:hidden;display:grid;place-items:center}
+  .mini.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  .amb-min{width:64px;height:48px;border-radius:12px;border:1px solid var(--edge);background:#0B1324 center/cover;flex:none}
+  .inp-min{padding:8px 12px;font-size:.92rem;margin-top:6px;width:100%;max-width:200px}
+  .amb-edit{position:absolute;top:10px;right:10px;width:36px;height:36px;border-radius:11px;background:rgba(6,12,28,.6);border:1px solid rgba(124,192,255,.3);color:var(--ice);display:grid;place-items:center;font-size:.95rem;cursor:pointer;overflow:hidden;z-index:2}
+  .amb-edit input{position:absolute;inset:0;opacity:0;cursor:pointer}
+  body.editando .amb-edit{display:none}
   [hidden]{display:none!important}
   @media (prefers-reduced-motion:reduce){*{transition:none!important} body.editando .item{animation:none}}
 </style>
@@ -294,6 +301,7 @@ let ORDEN = LS.get('orden_items', []);
 let DISENO = Object.assign({ reloj:true, clima:true, transito:true, plano:true }, LS.get('diseno', {}));
 let HORARIOS = [], hDev = null, hDias = [0,1,2,3,4,5,6];
 let AMBIENTES = LS.get('ambientes', {});
+let FOTOS = LS.get('fotos', {});
 const CASA = [
   { id:'living',    n:'Living' },
   { id:'comedor',   n:'Comedor' },
@@ -536,10 +544,11 @@ function ambsHTML(){
     const on = l && l.on;
     const estado = !l ? 'Sin luz asignada' : !l.online ? 'Sin conexión' : on ? 'Encendida' : 'Apagada';
     return '<div class="amb' + (on ? ' on' : '') + (l ? '' : ' sinluz') + '" data-amb="' + r.id + '" role="button" tabindex="0">' +
-      '<div class="foto" style="background-image:url(fotos/' + r.id + '.jpg)"></div>' +
+      '<div class="foto" style="background-image:url(\'' + (FOTOS[r.id] || 'fotos/' + r.id + '.jpg') + '\')"></div>' +
       '<div class="velo"></div><div class="marco"></div>' +
       '<div class="txt"><div class="n">' + esc(r.n) + '</div><div class="e">' + estado + '</div></div>' +
-      '<div class="pt">' + FOCO + '</div></div>';
+      '<div class="pt">' + FOCO + '</div>' +
+      '<label class="amb-edit" aria-label="Cambiar foto de ' + esc(r.n) + '">✎<input type="file" accept="image/*" onchange="subirFotoAmb(this,\'' + r.id + '\')"></label></div>';
   }).join('') + '</div>';
 }
 function crearPlano(){
@@ -548,6 +557,7 @@ function crearPlano(){
   el.innerHTML = '<div class="p-head"><span class="p-tit">Mi casa</span><span class="p-info" id="pInfo"></span></div>' + ambsHTML();
   el.onclick = e => {
     if (EDIT) return;
+    if (e.target.closest('.amb-edit')) return;
     const g = e.target.closest('.amb'); if (!g) return;
     const d = (devs || []).find(x => AMBIENTES[x.id] === g.dataset.amb);
     if (!d) { const i = el.querySelector('#pInfo'); i.textContent = 'Asignale una luz en Configuración'; setTimeout(() => i.textContent = '', 2500); return; }
@@ -784,11 +794,16 @@ function pintarConfig(){
       (lista.length ? lista.map(d => '<div class="fila"><span>' + esc(d.name) + '</span>' + sw('v_' + d.id, !d.hidden, 'Mostrar ' + d.name) + '</div>').join('')
         : '<p>No hay dispositivos en TUYA_DEVICES.</p>') +
     '</div>' +
-    '<div class="panel glass"><h3>Ambientes</h3><p>Elegí en qué ambiente está cada luz. Después la prendés tocando la foto.</p>' +
-      lista.map(d => '<div class="fila"><span>' + esc(d.name) + '</span><select class="inp" style="width:auto" id="amb_' + d.id + '">' +
-        '<option value="">Sin asignar</option>' +
-        CASA.map(r => '<option value="' + r.id + '"' + (AMBIENTES[d.id] === r.id ? ' selected' : '') + '>' + esc(r.n) + '</option>').join('') +
-        '</select></div>').join('') +
+    '<div class="panel glass"><h3>Ambientes</h3><p>Cargá la foto de cada lugar y elegí qué luz le corresponde. Las fotos se guardan en este equipo.</p>' +
+      CASA.map(r => '<div class="fila"><div class="amb-min" style="background-image:url(\'' + (FOTOS[r.id] || 'fotos/' + r.id + '.jpg') + '\')"></div>' +
+        '<div style="flex:1"><div>' + esc(r.n) + '</div>' +
+        '<select class="inp inp-min" id="amb_' + r.id + '"><option value="">Sin luz</option>' +
+        lista.map(d => '<option value="' + d.id + '"' + (AMBIENTES[d.id] === r.id ? ' selected' : '') + '>' + esc(d.name) + '</option>').join('') +
+        '</select></div>' +
+        '<div class="ctrl"><label class="mini file" aria-label="Cargar foto de ' + esc(r.n) + '">📷<input type="file" accept="image/*" onchange="subirFotoAmb(this,\'' + r.id + '\')"></label>' +
+        (FOTOS[r.id] ? '<button class="mini" onclick="sacarFotoAmb(\'' + r.id + '\')" aria-label="Quitar foto">✕</button>' : '') +
+        '</div></div>').join('') +
+      '<div class="nota" id="ambMsg"></div>' +
     '</div>' +
     '<div class="panel glass"><h3>Clave para entrar</h3><p>Si la activás, la web la pide antes de mostrar las luces.</p>' +
       '<div class="fila"><span>Pedir clave</span>' + sw('on', c.on, 'Pedir clave para entrar') + '</div>' +
@@ -818,8 +833,9 @@ function pintarConfig(){
   $('dClima').onchange = () => { DISENO.clima = $('dClima').checked; LS.set('diseno', DISENO); };
   $('dTransito').onchange = () => { DISENO.transito = $('dTransito').checked; LS.set('diseno', DISENO); };
   $('dPlano').onchange = () => { DISENO.plano = $('dPlano').checked; LS.set('diseno', DISENO); };
-  lista.forEach(d => { const s = $('amb_' + d.id); if (s) s.onchange = () => {
-    if (s.value) AMBIENTES[d.id] = s.value; else delete AMBIENTES[d.id];
+  CASA.forEach(r => { const s = $('amb_' + r.id); if (s) s.onchange = () => {
+    Object.keys(AMBIENTES).forEach(k => { if (AMBIENTES[k] === r.id) delete AMBIENTES[k]; });
+    if (s.value) AMBIENTES[s.value] = r.id;
     LS.set('ambientes', AMBIENTES); pintarPlano();
   }; });
 }
@@ -841,6 +857,28 @@ async function guardarCfg(){
     m.className = 'nota ok'; m.textContent = 'Cambios guardados.';
     iniciar();
   } catch(e) { m.className = 'nota err'; m.textContent = e.message; }
+}
+
+/* ---------- Fotos de los ambientes ---------- */
+async function subirFotoAmb(input, id){
+  const f = input.files[0]; input.value = ''; if (!f) return;
+  const aviso = (t, tipo) => {
+    const m = $('ambMsg'); if (m) { m.className = 'nota ' + (tipo || ''); m.textContent = t; }
+    const i = $('pInfo'); if (i) { i.textContent = t; setTimeout(() => { if (i.textContent === t) i.textContent = ''; }, 2500); }
+  };
+  aviso('Cargando foto…');
+  try {
+    let data = await achicar(f, 1200, 0.72);
+    try { FOTOS[id] = data; LS.set('fotos', FOTOS); }
+    catch(e) { data = await achicar(f, 800, 0.6); FOTOS[id] = data; LS.set('fotos', FOTOS); }
+    pintarPlano(); if (cfgData && !$('config').hidden) pintarConfig();
+    aviso('Foto cargada.', 'ok');
+  } catch(e) { aviso('No se pudo cargar: ' + e.message, 'err'); }
+}
+function sacarFotoAmb(id){
+  delete FOTOS[id]; LS.set('fotos', FOTOS); pintarPlano();
+  if (cfgData && !$('config').hidden) pintarConfig();
+  $('ambMsg').className = 'nota ok'; $('ambMsg').textContent = 'Foto quitada.';
 }
 
 /* ---------- Fondo de pantalla ---------- */
