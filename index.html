@@ -179,6 +179,16 @@
   .p3-cap h2{margin:0;font-size:clamp(22px,3vw,32px);font-weight:400}
   .p3-cap span{color:var(--muted)}
   .p3-chips{margin-top:12px}
+  .p3-wrap{padding-top:22px}
+  .p3-photo img{transition:filter .45s}
+  .p3-photo.apagada img{filter:brightness(.5) saturate(.75)}
+  .p3-spot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;padding:6px 8px;border:0;background:none;cursor:pointer;
+           font:600 var(--p3tam,14px) Outfit,system-ui,sans-serif;letter-spacing:.14em;color:#CFE6FF;opacity:var(--p3op,.7);
+           text-shadow:0 1px 6px rgba(0,0,0,.7);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:color .3s,text-shadow .3s}
+  .p3-spot.on{color:#FFD9A0;text-shadow:0 0 14px rgba(255,196,103,.8),0 1px 6px rgba(0,0,0,.6)}
+  .p3-spot.busy{pointer-events:none}
+  .p3-spot.moviendo{outline:1px dashed rgba(255,255,255,.7);outline-offset:4px;border-radius:8px;cursor:grabbing}
+  .p3-spot:focus-visible{outline:2px solid var(--ice);outline-offset:4px;border-radius:8px}
   .p3-chips .chip[aria-pressed="true"]{background:var(--ice);color:#07101F;border-color:transparent}
 
   /* Horarios */
@@ -287,7 +297,6 @@
 
 <section id="tres" hidden>
   <div class="p3-wrap">
-    <div class="p3-head"><h2>Plano de la casa</h2><p>Tocá un ambiente para verlo</p></div>
     <div class="p3-grid">
       <div class="p3-plan glass">
         <svg viewBox="0 0 793 522" role="group" aria-label="Plano de la planta">
@@ -305,7 +314,8 @@
         </svg>
       </div>
       <div class="p3-view">
-        <div class="p3-photo"><img id="p3big" alt="">
+        <div class="p3-photo" id="p3photo"><img id="p3big" alt="">
+          <button class="p3-spot" id="p3spot" aria-label="Prender o apagar la luz">OFF</button>
           <button class="p3-nav p3-prev" onclick="p3show(p3cur-1)" aria-label="Ambiente anterior">‹</button>
           <button class="p3-nav p3-next" onclick="p3show(p3cur+1)" aria-label="Ambiente siguiente">›</button>
         </div>
@@ -529,6 +539,7 @@ function render(){
   }
   if (DISENO.transito) pintarTransito();
   if (DISENO.plano) pintarPlano();
+  if (p3listo) p3estado();
   reloj();
   const on = vis.filter(d => d.on).length;
   $('count').textContent = !devs ? '' : on ? on + ' de ' + vis.length + ' encendida' + (on > 1 ? 's' : '') : 'Todas apagadas';
@@ -640,6 +651,79 @@ const P3 = [
   { id:'patio',      n:'Patio',                f:'patio',     x:525, y:270, w:268, h:252 }
 ];
 let p3cur = 0, p3listo = false;
+// Posición inicial de la lámpara en cada foto (% del ancho y alto de la imagen)
+const LAMPARA = { living:[53,15], comedor:[41,32], cocina:[59,43], principal:[68,22], macarena:[44,22], banio:[49,6], patio:[49,29] };
+const p3cfg = () => { if (!AMBIENTES._p3 || typeof AMBIENTES._p3 !== 'object') AMBIENTES._p3 = { pos:{}, tam:14, op:70 }; if (!AMBIENTES._p3.pos) AMBIENTES._p3.pos = {}; return AMBIENTES._p3; };
+function p3luz(){ const r = P3[p3cur]; return (devs || []).find(x => AMBIENTES[x.id] === r.f); }
+function p3aplicarEstilo(){
+  const c = AMBIENTES._p3 || {};
+  document.body.style.setProperty('--p3tam', (c.tam || 14) + 'px');
+  document.body.style.setProperty('--p3op', ((c.op == null ? 70 : c.op) / 100).toFixed(2));
+}
+let p3guardarT = null;
+function p3guardar(){ clearTimeout(p3guardarT); p3guardarT = setTimeout(() => { run('guardarAmbientes', KEY, AMBIENTES).catch(() => {}); }, 600); }
+function p3caja(){
+  const img = $('p3big'), bw = img.clientWidth, bh = img.clientHeight, nw = img.naturalWidth, nh = img.naturalHeight;
+  if (!nw) return null;
+  const s = Math.max(bw / nw, bh / nh), dw = nw * s, dh = nh * s;
+  return { ox: (bw - dw) / 2, oy: (bh - dh) / 2, dw, dh, bw, bh };
+}
+function p3ubicar(){
+  const k = p3caja(), f = P3[p3cur].f; if (!k) return;
+  const pos = (AMBIENTES._p3 && AMBIENTES._p3.pos && AMBIENTES._p3.pos[f]) || LAMPARA[f] || [50, 50];
+  $('p3spot').style.left = (k.ox + k.dw * pos[0] / 100) + 'px';
+  $('p3spot').style.top = (k.oy + k.dh * pos[1] / 100) + 'px';
+}
+function p3estado(){
+  if (!p3listo) return;
+  p3aplicarEstilo();
+  const d = p3luz(), spot = $('p3spot'), on = !!(d && d.on);
+  spot.classList.toggle('on', on);
+  $('p3photo').classList.toggle('apagada', !!d && !on);
+  spot.textContent = !d ? 'SIN LUZ' : !d.online ? 'SIN CONEXIÓN' : on ? 'ON' : 'OFF';
+}
+async function p3alternar(){
+  const d = p3luz(), spot = $('p3spot');
+  if (!d || !d.online || !d.sw) return;
+  spot.classList.add('busy');
+  try { await run('setPower', KEY, d.id, d.sw, !d.on); d.on = !d.on; render(); }
+  catch(err) { clave(err); }
+  spot.classList.remove('busy');
+  p3estado();
+}
+// Tocar = prender/apagar. Mantener apretado = mover.
+const p3p = { t:null, mov:false, x:0, y:0, arr:false };
+function p3eventos(){
+  const spot = $('p3spot'), foto = $('p3photo');
+  spot.addEventListener('pointerdown', e => {
+    e.preventDefault(); spot.setPointerCapture(e.pointerId);
+    Object.assign(p3p, { x:e.clientX, y:e.clientY, mov:false, arr:false });
+    clearTimeout(p3p.t);
+    p3p.t = setTimeout(() => { p3p.arr = true; spot.classList.add('moviendo'); try { navigator.vibrate && navigator.vibrate(25); } catch(_){} }, 500);
+  });
+  spot.addEventListener('pointermove', e => {
+    if (!p3p.arr) { if (Math.hypot(e.clientX - p3p.x, e.clientY - p3p.y) > 8) { p3p.mov = true; clearTimeout(p3p.t); } return; }
+    const r = foto.getBoundingClientRect();
+    const x = Math.max(0, Math.min(r.width, e.clientX - r.left)), y = Math.max(0, Math.min(r.height, e.clientY - r.top));
+    spot.style.left = x + 'px'; spot.style.top = y + 'px';
+  });
+  const soltar = e => {
+    clearTimeout(p3p.t);
+    if (p3p.arr) {
+      p3p.arr = false; spot.classList.remove('moviendo');
+      const k = p3caja(); if (!k) return;
+      const x = parseFloat(spot.style.left), y = parseFloat(spot.style.top);
+      p3cfg().pos[P3[p3cur].f] = [Math.round((x - k.ox) / k.dw * 1000) / 10, Math.round((y - k.oy) / k.dh * 1000) / 10];
+      p3guardar();
+    } else if (e.type === 'pointerup' && !p3p.mov) {
+      p3alternar();
+    }
+  };
+  spot.addEventListener('pointerup', soltar);
+  spot.addEventListener('pointercancel', soltar);
+  spot.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p3alternar(); } });
+  spot.addEventListener('contextmenu', e => e.preventDefault());
+}
 function iniciar3D(){
   if (p3listo) return; p3listo = true;
   const NS = 'http://www.w3.org/2000/svg', g = $('p3rooms'), chips = $('p3chips');
@@ -652,12 +736,7 @@ function iniciar3D(){
     im.setAttribute('preserveAspectRatio', 'xMidYMid slice'); im.setAttribute('clip-path', 'url(#p3c-' + r.id + ')');
     const hit = document.createElementNS(NS, 'rect');
     hit.setAttribute('class', 'hit'); ['x','y'].forEach(k => hit.setAttribute(k, r[k])); hit.setAttribute('width', r.w); hit.setAttribute('height', r.h);
-    const t = document.createElementNS(NS, 'text');
-    t.setAttribute('class', 'lbl'); t.setAttribute('x', r.x + r.w / 2); t.setAttribute('y', r.y + r.h / 2 + 6); t.setAttribute('text-anchor', 'middle');
-    if (r.id === 'cocina') t.setAttribute('transform', 'rotate(-90 ' + (r.x + r.w / 2) + ' ' + (r.y + r.h / 2) + ')');
-    if (r.id === 'macarena') t.innerHTML = '<tspan x="' + (r.x + r.w / 2) + '" dy="-10">Dormitorio</tspan><tspan x="' + (r.x + r.w / 2) + '" dy="22">Macarena</tspan>';
-    else t.textContent = r.n;
-    el.append(im, hit, t);
+    el.append(im, hit);
     el.addEventListener('click', () => p3show(i));
     el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p3show(i); } });
     g.append(el); r.el = el;
@@ -669,6 +748,9 @@ function iniciar3D(){
     if (e.key === 'ArrowLeft') p3show(p3cur - 1);
     if (e.key === 'ArrowRight') p3show(p3cur + 1);
   });
+  p3eventos();
+  $('p3big').addEventListener('load', p3ubicar);
+  window.addEventListener('resize', p3ubicar);
   p3show(0);
 }
 function p3show(i){
@@ -676,6 +758,7 @@ function p3show(i){
   $('p3big').src = 'fotos/' + r.f + '.jpg'; $('p3big').alt = r.n;
   $('p3name').textContent = r.n; $('p3count').textContent = (p3cur + 1) + ' de ' + P3.length;
   P3.forEach((x, j) => { x.el.classList.toggle('on', j === p3cur); x.chip.setAttribute('aria-pressed', j === p3cur); });
+  p3ubicar(); p3estado();
 }
 
 /* ---------- Horarios ---------- */
@@ -689,7 +772,7 @@ function textoDias(ds){
   return [...ds].sort().map(i => NOMBRES[i]).join(', ');
 }
 async function cargarAmbientes(){
-  try { AMBIENTES = await run('getAmbientes', KEY) || {}; pintarPlano(); } catch(e) {}
+  try { AMBIENTES = await run('getAmbientes', KEY) || {}; pintarPlano(); p3aplicarEstilo(); if (p3listo) { p3ubicar(); p3estado(); } } catch(e) {}
 }
 async function cargarHorarios(){
   try { HORARIOS = await run('getHorarios', KEY) || []; render(); } catch(e) {}
@@ -916,6 +999,11 @@ function pintarConfig(){
         '</select></div></div>').join('') +
       '<div class="nota" id="ambMsg"></div>' +
     '</div>' +
+    '<div class="panel glass"><h3>Pestaña 3D</h3><p>Cómo se ve el ON / OFF sobre las fotos. Para moverlo, mantenelo apretado en la foto y arrastralo.</p>' +
+      '<div class="campo"><label for="p3tam">Tamaño de letra: <span id="p3tamV"></span></label><input type="range" id="p3tam" min="9" max="32"></div>' +
+      '<div class="campo"><label for="p3op">Transparencia: <span id="p3opV"></span></label><input type="range" id="p3op" min="15" max="100"></div>' +
+      '<div class="fila" style="border-top:0"><span>Posiciones del texto</span><button class="btn-sec" onclick="p3resetPos()">Volver al lugar original</button></div>' +
+    '</div>' +
     '<div class="panel glass"><h3>Clave para entrar</h3><p>Si la activás, la web la pide antes de mostrar las luces.</p>' +
       '<div class="fila"><span>Pedir clave</span>' + sw('on', c.on, 'Pedir clave para entrar') + '</div>' +
       '<div class="campo"><label for="nueva">Clave de entrada</label>' +
@@ -943,6 +1031,13 @@ function pintarConfig(){
   $('dReloj').onchange = () => { DISENO.reloj = $('dReloj').checked; LS.set('diseno', DISENO); };
   $('dClima').onchange = () => { DISENO.clima = $('dClima').checked; LS.set('diseno', DISENO); };
   $('dTransito').onchange = () => { DISENO.transito = $('dTransito').checked; LS.set('diseno', DISENO); };
+  { const c = p3cfg();
+    $('p3tam').value = c.tam || 14; $('p3op').value = c.op == null ? 70 : c.op;
+    const pinta = () => { $('p3tamV').textContent = $('p3tam').value + ' px'; $('p3opV').textContent = $('p3op').value + '%'; };
+    pinta();
+    $('p3tam').oninput = () => { c.tam = +$('p3tam').value; pinta(); p3aplicarEstilo(); p3guardar(); };
+    $('p3op').oninput = () => { c.op = +$('p3op').value; pinta(); p3aplicarEstilo(); p3guardar(); };
+  }
   $('dPlano').onchange = () => { DISENO.plano = $('dPlano').checked; LS.set('diseno', DISENO); };
   CASA.forEach(r => { const s = $('amb_' + r.id); if (s) s.onchange = async () => {
     Object.keys(AMBIENTES).forEach(k => { if (AMBIENTES[k] === r.id) delete AMBIENTES[k]; });
@@ -952,6 +1047,8 @@ function pintarConfig(){
     catch(e) { m.className = 'nota err'; m.textContent = e.message; }
   }; });
 }
+
+function p3resetPos(){ p3cfg().pos = {}; p3guardar(); if (p3listo) p3ubicar(); $('cfgMsg').className = 'nota ok'; $('cfgMsg').textContent = 'Posiciones restablecidas.'; }
 
 function resetOrden(){ ORDEN = []; LS.set('orden_items', ORDEN); $('cfgMsg').className = 'nota ok'; $('cfgMsg').textContent = 'Orden restablecido.'; }
 
