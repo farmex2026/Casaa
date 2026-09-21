@@ -154,6 +154,33 @@
   .amb.sinluz{opacity:.75}
   body.editando .ambs{pointer-events:none}
 
+  /* Pestaña 3D: plano con fotos */
+  .p3-wrap{max-width:1280px;margin:0 auto;padding:16px 26px 40px}
+  .p3-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
+  .p3-head h2{font-size:clamp(26px,3.6vw,40px);font-weight:300;margin:0;letter-spacing:-.02em}
+  .p3-head p{margin:0;color:var(--muted)}
+  .p3-grid{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:24px;align-items:start}
+  @media (max-width:860px){ .p3-grid{grid-template-columns:1fr} }
+  .p3-plan{padding:14px}
+  .p3-plan svg{display:block;width:100%;height:auto}
+  .p3-room{cursor:pointer;outline:none}
+  .p3-room image{filter:grayscale(1) contrast(.9) brightness(1.05);opacity:.45;transition:opacity .25s,filter .25s}
+  .p3-room:hover image,.p3-room:focus-visible image{opacity:.8;filter:grayscale(.3)}
+  .p3-room.on image{opacity:1;filter:none}
+  .p3-room .hit{fill:transparent;stroke:rgba(130,180,255,.25);stroke-width:2}
+  .p3-room:focus-visible .hit{stroke:var(--ice);stroke-width:6}
+  .p3-room .lbl{font-size:17px;font-weight:600;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:4px;pointer-events:none}
+  .p3-view{position:sticky;top:16px}
+  .p3-photo{position:relative;border-radius:18px;overflow:hidden;background:#0B1324;aspect-ratio:4/3;border:1px solid var(--edge)}
+  .p3-photo img{width:100%;height:100%;object-fit:cover;display:block}
+  .p3-nav{position:absolute;top:50%;transform:translateY(-50%);width:42px;height:42px;border-radius:50%;border:0;background:rgba(10,16,30,.7);color:var(--text);font-size:22px;cursor:pointer;display:grid;place-items:center}
+  .p3-prev{left:12px} .p3-next{right:12px}
+  .p3-cap{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:14px}
+  .p3-cap h2{margin:0;font-size:clamp(22px,3vw,32px);font-weight:400}
+  .p3-cap span{color:var(--muted)}
+  .p3-chips{margin-top:12px}
+  .p3-chips .chip[aria-pressed="true"]{background:var(--ice);color:#07101F;border-color:transparent}
+
   /* Horarios */
   .tile{position:relative}
   .t-prog{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:12px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
@@ -249,12 +276,44 @@
   </div>
   <div class="tabs glass" role="tablist">
     <button role="tab" id="tInicio" aria-selected="true" onclick="verTab('inicio')">Inicio</button>
+    <button role="tab" id="tTres" aria-selected="false" onclick="verTab('tres')">3D</button>
     <button role="tab" id="tConfig" aria-selected="false" onclick="verTab('config')">Configuración</button>
   </div>
 </div>
 
 <section id="inicio">
   <div class="tablero" id="tablero"></div>
+</section>
+
+<section id="tres" hidden>
+  <div class="p3-wrap">
+    <div class="p3-head"><h2>Plano de la casa</h2><p>Tocá un ambiente para verlo</p></div>
+    <div class="p3-grid">
+      <div class="p3-plan glass">
+        <svg viewBox="0 0 793 522" role="group" aria-label="Plano de la planta">
+          <defs>
+            <clipPath id="p3c-dormitorio"><rect x="0" y="0" width="272" height="268"/></clipPath>
+            <clipPath id="p3c-banio"><rect x="272" y="0" width="253" height="163"/></clipPath>
+            <clipPath id="p3c-macarena"><rect x="525" y="0" width="268" height="270"/></clipPath>
+            <clipPath id="p3c-living"><rect x="272" y="163" width="253" height="105"/></clipPath>
+            <clipPath id="p3c-cocina"><rect x="0" y="268" width="220" height="254"/></clipPath>
+            <clipPath id="p3c-comedor"><rect x="220" y="268" width="305" height="254"/></clipPath>
+            <clipPath id="p3c-patio"><rect x="525" y="270" width="268" height="252"/></clipPath>
+            <clipPath id="p3c-casa"><rect x="0" y="0" width="793" height="522" rx="28"/></clipPath>
+          </defs>
+          <g id="p3rooms" clip-path="url(#p3c-casa)"></g>
+        </svg>
+      </div>
+      <div class="p3-view">
+        <div class="p3-photo"><img id="p3big" alt="">
+          <button class="p3-nav p3-prev" onclick="p3show(p3cur-1)" aria-label="Ambiente anterior">‹</button>
+          <button class="p3-nav p3-next" onclick="p3show(p3cur+1)" aria-label="Ambiente siguiente">›</button>
+        </div>
+        <div class="p3-cap"><h2 id="p3name"></h2><span id="p3count"></span></div>
+        <div class="chips p3-chips" id="p3chips"></div>
+      </div>
+    </div>
+  </div>
 </section>
 
 <section id="config" hidden></section>
@@ -570,6 +629,55 @@ function pintarPlano(){
   if (viejo) elPlano.replaceChild(tmp.firstChild, viejo); else elPlano.insertAdjacentHTML('beforeend', ambsHTML());
 }
 
+/* ---------- Pestaña 3D: plano con fotos ---------- */
+const P3 = [
+  { id:'living',     n:'Living',               f:'living',    x:272, y:163, w:253, h:105 },
+  { id:'comedor',    n:'Comedor',              f:'comedor',   x:220, y:268, w:305, h:254 },
+  { id:'cocina',     n:'Cocina',               f:'cocina',    x:0,   y:268, w:220, h:254 },
+  { id:'dormitorio', n:'Dormitorio',           f:'principal', x:0,   y:0,   w:272, h:268 },
+  { id:'macarena',   n:'Dormitorio Macarena',  f:'macarena',  x:525, y:0,   w:268, h:270 },
+  { id:'banio',      n:'Baño',                 f:'banio',     x:272, y:0,   w:253, h:163 },
+  { id:'patio',      n:'Patio',                f:'patio',     x:525, y:270, w:268, h:252 }
+];
+let p3cur = 0, p3listo = false;
+function iniciar3D(){
+  if (p3listo) return; p3listo = true;
+  const NS = 'http://www.w3.org/2000/svg', g = $('p3rooms'), chips = $('p3chips');
+  P3.forEach((r, i) => {
+    const el = document.createElementNS(NS, 'g');
+    el.setAttribute('class', 'p3-room'); el.setAttribute('tabindex', '0'); el.setAttribute('role', 'button'); el.setAttribute('aria-label', r.n);
+    const im = document.createElementNS(NS, 'image');
+    im.setAttribute('href', 'fotos/' + r.f + '.jpg');
+    ['x','y'].forEach(k => im.setAttribute(k, r[k])); im.setAttribute('width', r.w); im.setAttribute('height', r.h);
+    im.setAttribute('preserveAspectRatio', 'xMidYMid slice'); im.setAttribute('clip-path', 'url(#p3c-' + r.id + ')');
+    const hit = document.createElementNS(NS, 'rect');
+    hit.setAttribute('class', 'hit'); ['x','y'].forEach(k => hit.setAttribute(k, r[k])); hit.setAttribute('width', r.w); hit.setAttribute('height', r.h);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('class', 'lbl'); t.setAttribute('x', r.x + r.w / 2); t.setAttribute('y', r.y + r.h / 2 + 6); t.setAttribute('text-anchor', 'middle');
+    if (r.id === 'cocina') t.setAttribute('transform', 'rotate(-90 ' + (r.x + r.w / 2) + ' ' + (r.y + r.h / 2) + ')');
+    if (r.id === 'macarena') t.innerHTML = '<tspan x="' + (r.x + r.w / 2) + '" dy="-10">Dormitorio</tspan><tspan x="' + (r.x + r.w / 2) + '" dy="22">Macarena</tspan>';
+    else t.textContent = r.n;
+    el.append(im, hit, t);
+    el.addEventListener('click', () => p3show(i));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p3show(i); } });
+    g.append(el); r.el = el;
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = r.n;
+    b.addEventListener('click', () => p3show(i)); chips.append(b); r.chip = b;
+  });
+  document.addEventListener('keydown', e => {
+    if ($('tres').hidden) return;
+    if (e.key === 'ArrowLeft') p3show(p3cur - 1);
+    if (e.key === 'ArrowRight') p3show(p3cur + 1);
+  });
+  p3show(0);
+}
+function p3show(i){
+  p3cur = (i + P3.length) % P3.length; const r = P3[p3cur];
+  $('p3big').src = 'fotos/' + r.f + '.jpg'; $('p3big').alt = r.n;
+  $('p3name').textContent = r.n; $('p3count').textContent = (p3cur + 1) + ' de ' + P3.length;
+  P3.forEach((x, j) => { x.el.classList.toggle('on', j === p3cur); x.chip.setAttribute('aria-pressed', j === p3cur); });
+}
+
 /* ---------- Horarios ---------- */
 const LETRAS = ['D','L','M','M','J','V','S'];
 const NOMBRES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
@@ -748,12 +856,17 @@ $('k').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
 
 /* ---------- Pestañas ---------- */
 function verTab(t){
-  const cfg = t === 'config';
-  if (cfg && EDIT) salirEdicion();
-  $('inicio').hidden = cfg; $('config').hidden = !cfg;
-  $('barraNormal').style.visibility = cfg ? 'hidden' : '';
-  $('tInicio').setAttribute('aria-selected', !cfg); $('tConfig').setAttribute('aria-selected', cfg);
-  if (cfg) puertaConfig(); else { CFG = ''; cfgData = null; render(); }
+  if (t !== 'inicio' && EDIT) salirEdicion();
+  $('inicio').hidden = t !== 'inicio';
+  $('tres').hidden = t !== 'tres';
+  $('config').hidden = t !== 'config';
+  $('barraNormal').style.visibility = t === 'inicio' ? '' : 'hidden';
+  $('tInicio').setAttribute('aria-selected', t === 'inicio');
+  $('tTres').setAttribute('aria-selected', t === 'tres');
+  $('tConfig').setAttribute('aria-selected', t === 'config');
+  if (t === 'tres') iniciar3D();
+  if (t === 'config') puertaConfig();
+  else { CFG = ''; cfgData = null; if (t === 'inicio') render(); }
 }
 
 /* ---------- Configuración ---------- */
