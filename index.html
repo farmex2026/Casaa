@@ -300,8 +300,7 @@ const guardarLocal = k => { try { localStorage.setItem('clave_luces', k); } catc
 let ORDEN = LS.get('orden_items', []);
 let DISENO = Object.assign({ reloj:true, clima:true, transito:true, plano:true }, LS.get('diseno', {}));
 let HORARIOS = [], hDev = null, hDias = [0,1,2,3,4,5,6];
-let AMBIENTES = LS.get('ambientes', {});
-let FOTOS = LS.get('fotos', {});
+let AMBIENTES = {};
 const CASA = [
   { id:'living',    n:'Living' },
   { id:'comedor',   n:'Comedor' },
@@ -544,7 +543,7 @@ function ambsHTML(){
     const on = l && l.on;
     const estado = !l ? 'Sin luz asignada' : !l.online ? 'Sin conexión' : on ? 'Encendida' : 'Apagada';
     return '<div class="amb' + (on ? ' on' : '') + (l ? '' : ' sinluz') + '" data-amb="' + r.id + '" role="button" tabindex="0">' +
-      '<div class="foto" style="background-image:url(\'' + (FOTOS[r.id] || 'fotos/' + r.id + '.jpg') + '\')"></div>' +
+      '<div class="foto" style="background-image:url(\'' + 'fotos/' + r.id + '.jpg' + '\')"></div>' +
       '<div class="velo"></div><div class="marco"></div>' +
       '<div class="txt"><div class="n">' + esc(r.n) + '</div><div class="e">' + estado + '</div></div>' +
       '<div class="pt">' + FOCO + '</div></div>';
@@ -580,6 +579,9 @@ function textoDias(ds){
   if (s === '1,2,3,4,5') return 'Lunes a viernes';
   if (s === '0,6') return 'Fines de semana';
   return [...ds].sort().map(i => NOMBRES[i]).join(', ');
+}
+async function cargarAmbientes(){
+  try { AMBIENTES = await run('getAmbientes', KEY) || {}; pintarPlano(); } catch(e) {}
 }
 async function cargarHorarios(){
   try { HORARIOS = await run('getHorarios', KEY) || []; render(); } catch(e) {}
@@ -793,15 +795,12 @@ function pintarConfig(){
       (lista.length ? lista.map(d => '<div class="fila"><span>' + esc(d.name) + '</span>' + sw('v_' + d.id, !d.hidden, 'Mostrar ' + d.name) + '</div>').join('')
         : '<p>No hay dispositivos en TUYA_DEVICES.</p>') +
     '</div>' +
-    '<div class="panel glass"><h3>Ambientes</h3><p>Cargá la foto de cada lugar y elegí qué luz le corresponde. Las fotos se guardan en este equipo.</p>' +
-      CASA.map(r => '<div class="fila"><div class="amb-min" style="background-image:url(\'' + (FOTOS[r.id] || 'fotos/' + r.id + '.jpg') + '\')"></div>' +
+    '<div class="panel glass"><h3>Ambientes</h3><p>Elegí qué luz le corresponde a cada lugar. Se guarda en el servidor, así se ve igual en todos los equipos.</p>' +
+      CASA.map(r => '<div class="fila"><div class="amb-min" style="background-image:url(\'fotos/' + r.id + '.jpg\')"></div>' +
         '<div style="flex:1"><div>' + esc(r.n) + '</div>' +
         '<select class="inp inp-min" id="amb_' + r.id + '"><option value="">Sin luz</option>' +
         lista.map(d => '<option value="' + d.id + '"' + (AMBIENTES[d.id] === r.id ? ' selected' : '') + '>' + esc(d.name) + '</option>').join('') +
-        '</select></div>' +
-        '<div class="ctrl"><label class="mini file" aria-label="Cargar foto de ' + esc(r.n) + '">📷<input type="file" accept="image/*" onchange="subirFotoAmb(this,\'' + r.id + '\')"></label>' +
-        (FOTOS[r.id] ? '<button class="mini" onclick="sacarFotoAmb(\'' + r.id + '\')" aria-label="Quitar foto">✕</button>' : '') +
-        '</div></div>').join('') +
+        '</select></div></div>').join('') +
       '<div class="nota" id="ambMsg"></div>' +
     '</div>' +
     '<div class="panel glass"><h3>Clave para entrar</h3><p>Si la activás, la web la pide antes de mostrar las luces.</p>' +
@@ -832,10 +831,12 @@ function pintarConfig(){
   $('dClima').onchange = () => { DISENO.clima = $('dClima').checked; LS.set('diseno', DISENO); };
   $('dTransito').onchange = () => { DISENO.transito = $('dTransito').checked; LS.set('diseno', DISENO); };
   $('dPlano').onchange = () => { DISENO.plano = $('dPlano').checked; LS.set('diseno', DISENO); };
-  CASA.forEach(r => { const s = $('amb_' + r.id); if (s) s.onchange = () => {
+  CASA.forEach(r => { const s = $('amb_' + r.id); if (s) s.onchange = async () => {
     Object.keys(AMBIENTES).forEach(k => { if (AMBIENTES[k] === r.id) delete AMBIENTES[k]; });
     if (s.value) AMBIENTES[s.value] = r.id;
-    LS.set('ambientes', AMBIENTES); pintarPlano();
+    const m = $('ambMsg'); m.className = 'nota'; m.textContent = 'Guardando…';
+    try { await run('guardarAmbientes', KEY, AMBIENTES); m.className = 'nota ok'; m.textContent = 'Guardado.'; pintarPlano(); }
+    catch(e) { m.className = 'nota err'; m.textContent = e.message; }
   }; });
 }
 
@@ -856,28 +857,6 @@ async function guardarCfg(){
     m.className = 'nota ok'; m.textContent = 'Cambios guardados.';
     iniciar();
   } catch(e) { m.className = 'nota err'; m.textContent = e.message; }
-}
-
-/* ---------- Fotos de los ambientes ---------- */
-async function subirFotoAmb(input, id){
-  const f = input.files[0]; input.value = ''; if (!f) return;
-  const aviso = (t, tipo) => {
-    const m = $('ambMsg'); if (m) { m.className = 'nota ' + (tipo || ''); m.textContent = t; }
-    const i = $('pInfo'); if (i) { i.textContent = t; setTimeout(() => { if (i.textContent === t) i.textContent = ''; }, 2500); }
-  };
-  aviso('Cargando foto…');
-  try {
-    let data = await achicar(f, 1200, 0.72);
-    try { FOTOS[id] = data; LS.set('fotos', FOTOS); }
-    catch(e) { data = await achicar(f, 800, 0.6); FOTOS[id] = data; LS.set('fotos', FOTOS); }
-    pintarPlano(); if (cfgData && !$('config').hidden) pintarConfig();
-    aviso('Foto cargada.', 'ok');
-  } catch(e) { aviso('No se pudo cargar: ' + e.message, 'err'); }
-}
-function sacarFotoAmb(id){
-  delete FOTOS[id]; LS.set('fotos', FOTOS); pintarPlano();
-  if (cfgData && !$('config').hidden) pintarConfig();
-  $('ambMsg').className = 'nota ok'; $('ambMsg').textContent = 'Foto quitada.';
 }
 
 /* ---------- Fondo de pantalla ---------- */
@@ -939,7 +918,7 @@ document.addEventListener('visibilitychange', mantenerEncendida);
 mantenerEncendida();
 
 /* ---------- Arranque y actualización ---------- */
-function iniciar(){ cargarLuces(); cargarClima(); cargarFondo(); cargarHorarios(); if (DESTINO && DISENO.transito) buscarRuta(DESTINO, true); }
+function iniciar(){ cargarLuces(); cargarClima(); cargarFondo(); cargarHorarios(); cargarAmbientes(); if (DESTINO && DISENO.transito) buscarRuta(DESTINO, true); }
 fondoLocal();
 render();
 setInterval(reloj, 1000);
