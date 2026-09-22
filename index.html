@@ -180,11 +180,11 @@
   .p3-cap{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-top:14px}
   .p3-cap h2{margin:0;font-size:clamp(22px,3vw,32px);font-weight:400}
   .p3-cap span{color:var(--muted)}
-  .p3-chips{margin-top:12px}
+  .p3-chips{display:none}
   .p3-wrap{padding-top:22px}
   .p3-photo img{transition:filter .45s}
   .p3-photo.apagada img{filter:brightness(.5) saturate(.75)}
-  .p3-spot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;padding:6px 8px;border:0;background:none;cursor:pointer;
+  .p3-spot{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;white-space:nowrap;padding:6px 8px;border:0;background:none;cursor:pointer;
            font:600 var(--p3tam,14px) Outfit,system-ui,sans-serif;letter-spacing:.14em;color:#CFE6FF;opacity:var(--p3op,.7);
            text-shadow:0 1px 6px rgba(0,0,0,.7);touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;transition:color .3s,text-shadow .3s}
   .p3-spot.on{color:#FFD9A0;text-shadow:0 0 14px rgba(255,196,103,.8),0 1px 6px rgba(0,0,0,.6)}
@@ -339,7 +339,6 @@
       </div>
       <div class="p3-view">
         <div class="p3-photo" id="p3photo"><img id="p3big" alt="">
-          <button class="p3-spot" id="p3spot" aria-label="Prender o apagar la luz">OFF</button>
           <button class="p3-nav p3-prev" onclick="p3show(p3cur-1)" aria-label="Ambiente anterior">‹</button>
           <button class="p3-nav p3-next" onclick="p3show(p3cur+1)" aria-label="Ambiente siguiente">›</button>
         </div>
@@ -687,8 +686,11 @@ const P3 = [
   { id:'patio',      n:'Patio',                f:'patio',     x:525, y:270, w:268, h:252 }
 ];
 let p3cur = 0, p3listo = false;
-// Posición inicial de la lámpara en cada foto (% del ancho y alto de la imagen)
-const LAMPARA = { living:[53,15], comedor:[41,32], cocina:[59,43], principal:[68,22], macarena:[44,22], banio:[49,6], patio:[49,29] };
+// Posición inicial de cada texto (% del ancho y alto de la imagen)
+const LAMPARA = { living:[53,15], comedor:[41,32], cocina:[59,43], principal:[68,22], macarena:[44,22], banio:[49,6], patio:[49,29],
+                  'comedor:tv':[12,36], 'comedor:aire':[80,18] };
+// Controles extra por ambiente (además de la luz)
+const P3_EXTRA = { comedor: ['tv', 'aire'] };
 const p3cfg = () => { if (!AMBIENTES._p3 || typeof AMBIENTES._p3 !== 'object') AMBIENTES._p3 = { pos:{}, tam:14, op:70 }; if (!AMBIENTES._p3.pos) AMBIENTES._p3.pos = {}; return AMBIENTES._p3; };
 function p3luz(){ const r = P3[p3cur]; return (devs || []).find(x => AMBIENTES[x.id] === r.f); }
 function p3aplicarEstilo(){
@@ -704,37 +706,77 @@ function p3caja(){
   const s = Math.max(bw / nw, bh / nh), dw = nw * s, dh = nh * s;
   return { ox: (bw - dw) / 2, oy: (bh - dh) / 2, dw, dh, bw, bh };
 }
+const p3clave = (f, tipo) => tipo === 'luz' ? f : f + ':' + tipo;
+function p3spots(){ return [...$('p3photo').querySelectorAll('.p3-spot')]; }
+function p3crearSpots(){
+  p3spots().forEach(s => s.remove());
+  const f = P3[p3cur].f;
+  ['luz', ...(P3_EXTRA[f] || [])].forEach(tipo => {
+    const b = document.createElement('button');
+    b.className = 'p3-spot'; b.dataset.tipo = tipo;
+    b.setAttribute('aria-label', tipo === 'luz' ? 'Prender o apagar la luz' : tipo === 'tv' ? 'Prender o apagar el televisor' : 'Prender o apagar el aire');
+    $('p3photo').appendChild(b);
+    p3eventos(b);
+  });
+}
 function p3ubicar(){
   const k = p3caja(), f = P3[p3cur].f; if (!k) return;
-  const pos = (AMBIENTES._p3 && AMBIENTES._p3.pos && AMBIENTES._p3.pos[f]) || LAMPARA[f] || [50, 50];
-  $('p3spot').style.left = (k.ox + k.dw * pos[0] / 100) + 'px';
-  $('p3spot').style.top = (k.oy + k.dh * pos[1] / 100) + 'px';
+  const guard = (AMBIENTES._p3 && AMBIENTES._p3.pos) || {};
+  p3spots().forEach(s => {
+    const cl = p3clave(f, s.dataset.tipo);
+    const pos = guard[cl] || LAMPARA[cl] || [50, 50];
+    s.style.left = (k.ox + k.dw * pos[0] / 100) + 'px';
+    s.style.top = (k.oy + k.dh * pos[1] / 100) + 'px';
+  });
 }
 function p3estado(){
   if (!p3listo) return;
   p3aplicarEstilo();
-  const d = p3luz(), spot = $('p3spot'), on = !!(d && d.on);
-  spot.classList.toggle('on', on);
-  $('p3photo').classList.toggle('apagada', !!d && !on);
-  spot.textContent = !d ? 'SIN LUZ' : !d.online ? 'SIN CONEXIÓN' : on ? 'ON' : 'OFF';
+  const d = p3luz(), varios = p3spots().length > 1, c = p3cfg();
+  p3spots().forEach(s => {
+    const t = s.dataset.tipo;
+    let on = false, txt = '';
+    if (t === 'luz') {
+      on = !!(d && d.on);
+      txt = !d ? 'SIN LUZ' : !d.online ? 'SIN CONEXIÓN' : (varios ? 'LUZ ' : '') + (on ? 'ON' : 'OFF');
+    } else if (t === 'aire') {
+      on = !!(AIRE && AIRE.power);
+      txt = 'AIRE ' + (AIRE ? (on ? 'ON' : 'OFF') : '…');
+    } else if (t === 'tv') {
+      on = !!c.tv;
+      txt = 'TV ' + (on ? 'ON' : 'OFF');
+    }
+    s.classList.toggle('on', on); s.textContent = txt;
+  });
+  $('p3photo').classList.toggle('apagada', !!d && !d.on);
   P3.forEach(r => {
     const l = (devs || []).find(x => AMBIENTES[x.id] === r.f);
     if (r.el) r.el.classList.toggle('lit', !!(l && l.on));
   });
 }
-async function p3alternar(){
-  const d = p3luz(), spot = $('p3spot');
-  if (!d || !d.online || !d.sw) return;
+async function p3alternar(spot){
+  const t = spot.dataset.tipo;
   spot.classList.add('busy');
-  try { await run('setPower', KEY, d.id, d.sw, !d.on); d.on = !d.on; render(); }
-  catch(err) { clave(err); }
+  try {
+    if (t === 'luz') {
+      const d = p3luz();
+      if (d && d.online && d.sw) { await run('setPower', KEY, d.id, d.sw, !d.on); d.on = !d.on; render(); }
+    } else if (t === 'aire') {
+      if (!AIRE) AIRE = { power: 0, mode: 0, temp: 24, wind: 0 };
+      const nuevo = Object.assign({}, AIRE, { power: AIRE.power ? 0 : 1 });
+      AIRE = Object.assign(AIRE, await run('setAire', KEY, nuevo)); aireMsg = ''; pintarAire();
+    } else if (t === 'tv') {
+      await run('tvTecla', KEY, 'Power');
+      const c = p3cfg(); c.tv = !c.tv; p3guardar();
+    }
+  } catch(err) { clave(err); }
   spot.classList.remove('busy');
   p3estado();
 }
 // Tocar = prender/apagar. Mantener apretado = mover.
 const p3p = { t:null, mov:false, x:0, y:0, arr:false };
-function p3eventos(){
-  const spot = $('p3spot'), foto = $('p3photo');
+function p3eventos(spot){
+  const foto = $('p3photo');
   spot.addEventListener('pointerdown', e => {
     e.preventDefault(); spot.setPointerCapture(e.pointerId);
     Object.assign(p3p, { x:e.clientX, y:e.clientY, mov:false, arr:false });
@@ -744,8 +786,8 @@ function p3eventos(){
   spot.addEventListener('pointermove', e => {
     if (!p3p.arr) { if (Math.hypot(e.clientX - p3p.x, e.clientY - p3p.y) > 8) { p3p.mov = true; clearTimeout(p3p.t); } return; }
     const r = foto.getBoundingClientRect();
-    const x = Math.max(0, Math.min(r.width, e.clientX - r.left)), y = Math.max(0, Math.min(r.height, e.clientY - r.top));
-    spot.style.left = x + 'px'; spot.style.top = y + 'px';
+    spot.style.left = Math.max(0, Math.min(r.width, e.clientX - r.left)) + 'px';
+    spot.style.top = Math.max(0, Math.min(r.height, e.clientY - r.top)) + 'px';
   });
   const soltar = e => {
     clearTimeout(p3p.t);
@@ -753,15 +795,15 @@ function p3eventos(){
       p3p.arr = false; spot.classList.remove('moviendo');
       const k = p3caja(); if (!k) return;
       const x = parseFloat(spot.style.left), y = parseFloat(spot.style.top);
-      p3cfg().pos[P3[p3cur].f] = [Math.round((x - k.ox) / k.dw * 1000) / 10, Math.round((y - k.oy) / k.dh * 1000) / 10];
+      p3cfg().pos[p3clave(P3[p3cur].f, spot.dataset.tipo)] = [Math.round((x - k.ox) / k.dw * 1000) / 10, Math.round((y - k.oy) / k.dh * 1000) / 10];
       p3guardar();
     } else if (e.type === 'pointerup' && !p3p.mov) {
-      p3alternar();
+      p3alternar(spot);
     }
   };
   spot.addEventListener('pointerup', soltar);
   spot.addEventListener('pointercancel', soltar);
-  spot.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p3alternar(); } });
+  spot.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); p3alternar(spot); } });
   spot.addEventListener('contextmenu', e => e.preventDefault());
 }
 function iniciar3D(){
@@ -788,8 +830,8 @@ function iniciar3D(){
     if (e.key === 'ArrowLeft') p3show(p3cur - 1);
     if (e.key === 'ArrowRight') p3show(p3cur + 1);
   });
-  p3eventos();
   $('p3big').addEventListener('load', p3ubicar);
+  if (!AIRE) cargarAire();
   window.addEventListener('resize', p3ubicar);
   p3show(0);
 }
@@ -798,7 +840,7 @@ function p3show(i){
   $('p3big').src = 'fotos/' + r.f + '.jpg'; $('p3big').alt = r.n;
   $('p3name').textContent = r.n; $('p3count').textContent = (p3cur + 1) + ' de ' + P3.length;
   P3.forEach((x, j) => { x.el.classList.toggle('sel', j === p3cur); x.chip.setAttribute('aria-pressed', j === p3cur); });
-  p3ubicar(); p3estado();
+  p3crearSpots(); p3ubicar(); p3estado();
 }
 
 /* ---------- Aire acondicionado ---------- */
@@ -811,6 +853,7 @@ async function cargarAire(){
   pintarAire();
 }
 function pintarAire(){
+  if (p3listo) p3estado();
   const el = document.querySelector('#tablero .w-aire'); if (!el) return;
   el.classList.toggle('off', !(AIRE && AIRE.power));
   el.innerHTML = aireHTML();
