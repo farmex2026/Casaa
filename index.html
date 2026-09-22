@@ -164,10 +164,12 @@
   .p3-plan{padding:14px}
   .p3-plan svg{display:block;width:100%;height:auto}
   .p3-room{cursor:pointer;outline:none}
-  .p3-room image{filter:grayscale(1) contrast(.9) brightness(1.05);opacity:.45;transition:opacity .25s,filter .25s}
-  .p3-room:hover image,.p3-room:focus-visible image{opacity:.8;filter:grayscale(.3)}
-  .p3-room.on image{opacity:1;filter:none}
-  .p3-room .hit{fill:transparent;stroke:rgba(130,180,255,.25);stroke-width:2}
+  .p3-room image{filter:grayscale(1) brightness(.8);opacity:.42;transition:opacity .35s,filter .35s}
+  .p3-room:hover image,.p3-room:focus-visible image{opacity:.62}
+  .p3-room.lit image{filter:grayscale(.15) sepia(.3) saturate(1.1) brightness(.95);opacity:.82}
+  .p3-room .hit{fill:transparent;stroke:rgba(130,180,255,.25);stroke-width:2;transition:stroke .25s}
+  .p3-room.lit .hit{fill:rgba(255,196,103,.08)}
+  .p3-room.sel .hit{stroke:var(--ice);stroke-width:5}
   .p3-room:focus-visible .hit{stroke:var(--ice);stroke-width:6}
   .p3-room .lbl{font-size:17px;font-weight:600;fill:#fff;paint-order:stroke;stroke:rgba(0,0,0,.6);stroke-width:4px;pointer-events:none}
   .p3-view{position:sticky;top:16px}
@@ -190,6 +192,28 @@
   .p3-spot.moviendo{outline:1px dashed rgba(255,255,255,.7);outline-offset:4px;border-radius:8px;cursor:grabbing}
   .p3-spot:focus-visible{outline:2px solid var(--ice);outline-offset:4px;border-radius:8px}
   .p3-chips .chip[aria-pressed="true"]{background:var(--ice);color:#07101F;border-color:transparent}
+
+  /* Aire y TV */
+  .w-aire,.w-tv{grid-column:span 2;grid-row:span 2;padding:18px;display:flex;flex-direction:column;gap:12px}
+  .a-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .a-tit{font-size:1.05rem}
+  .a-est{color:var(--muted);font-size:.85rem;margin-top:2px}
+  .a-pow{width:48px;height:48px;border-radius:50%;border:1px solid var(--edge);background:rgba(8,14,28,.45);color:var(--muted);display:grid;place-items:center;cursor:pointer;transition:all .3s}
+  .a-pow svg{width:22px;height:22px}
+  .a-pow.on{background:var(--ice);color:#07101F;border-color:transparent;box-shadow:0 0 26px 6px rgba(124,192,255,.35)}
+  .a-temp{display:flex;align-items:center;justify-content:center;gap:22px;flex:1}
+  .a-num{font-size:3.4rem;font-weight:200;line-height:1;font-variant-numeric:tabular-nums;min-width:3ch;text-align:center}
+  .a-num small{font-size:1.3rem;vertical-align:top;margin-left:2px}
+  .w-aire.off .a-num{color:var(--muted)}
+  .rbtn{width:48px;height:48px;border-radius:50%;border:1px solid var(--edge);background:rgba(8,14,28,.45);color:var(--text);font-size:1.4rem;cursor:pointer}
+  .a-fila{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+  .a-fila > span{color:var(--muted);font-size:.85rem}
+  .seg.chico{flex-wrap:wrap}
+  .tv-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .tvb{height:46px;border-radius:14px;border:1px solid var(--edge);background:rgba(8,14,28,.45);color:var(--text);font:inherit;font-size:.9rem;cursor:pointer;transition:background .15s}
+  .tvb.press{background:rgba(124,192,255,.3)}
+  .tvb.pw{color:#FF9C8C}
+  .tvb:empty{visibility:hidden}
 
   /* Horarios */
   .tile{position:relative}
@@ -367,7 +391,8 @@ let devs = null, KEY = '', CFG = '', cfgData = null;
 try { KEY = localStorage.getItem('clave_luces') || ''; } catch(e){}
 const guardarLocal = k => { try { localStorage.setItem('clave_luces', k); } catch(e){} };
 let ORDEN = LS.get('orden_items', []);
-let DISENO = Object.assign({ reloj:true, clima:true, transito:true, plano:true }, LS.get('diseno', {}));
+let DISENO = Object.assign({ reloj:true, clima:true, transito:true, plano:true, aire:true, tv:true }, LS.get('diseno', {}));
+let AIRE = null, aireT = null, aireMsg = '';
 let HORARIOS = [], hDev = null, hDias = [0,1,2,3,4,5,6];
 let AMBIENTES = {};
 const CASA = [
@@ -519,7 +544,8 @@ function render(){
   const tb = $('tablero');
   const vis = (devs || []).filter(d => !d.hidden);
   const ids = ordenar([...(DISENO.reloj ? ['reloj'] : []), ...(DISENO.clima ? ['clima'] : []),
-                       ...(DISENO.plano ? ['plano'] : []), ...vis.map(d => 'l:' + d.id),
+                       ...(DISENO.plano ? ['plano'] : []), ...(DISENO.aire ? ['aire'] : []), ...(DISENO.tv ? ['tv'] : []),
+                       ...vis.map(d => 'l:' + d.id),
                        ...(DISENO.transito ? ['transito'] : [])]);
   if (DISENO.plano && !elPlano) elPlano = crearPlano();
   if (DISENO.transito && !elTransito) { elTransito = crearTransito(); }
@@ -551,6 +577,16 @@ function crearItem(id){
   if (id === 'reloj') {
     el.className = 'item w-reloj';
     el.innerHTML = '<div class="hora" id="hora">--:--</div><div class="fecha" id="fecha"></div>';
+    return el;
+  }
+  if (id === 'aire') {
+    el.className = 'item w-aire glass' + (AIRE && AIRE.power ? '' : ' off');
+    el.innerHTML = aireHTML();
+    return el;
+  }
+  if (id === 'tv') {
+    el.className = 'item w-tv glass';
+    el.innerHTML = tvHTML();
     return el;
   }
   if (id === 'clima') {
@@ -681,6 +717,10 @@ function p3estado(){
   spot.classList.toggle('on', on);
   $('p3photo').classList.toggle('apagada', !!d && !on);
   spot.textContent = !d ? 'SIN LUZ' : !d.online ? 'SIN CONEXIÓN' : on ? 'ON' : 'OFF';
+  P3.forEach(r => {
+    const l = (devs || []).find(x => AMBIENTES[x.id] === r.f);
+    if (r.el) r.el.classList.toggle('lit', !!(l && l.on));
+  });
 }
 async function p3alternar(){
   const d = p3luz(), spot = $('p3spot');
@@ -757,8 +797,69 @@ function p3show(i){
   p3cur = (i + P3.length) % P3.length; const r = P3[p3cur];
   $('p3big').src = 'fotos/' + r.f + '.jpg'; $('p3big').alt = r.n;
   $('p3name').textContent = r.n; $('p3count').textContent = (p3cur + 1) + ' de ' + P3.length;
-  P3.forEach((x, j) => { x.el.classList.toggle('on', j === p3cur); x.chip.setAttribute('aria-pressed', j === p3cur); });
+  P3.forEach((x, j) => { x.el.classList.toggle('sel', j === p3cur); x.chip.setAttribute('aria-pressed', j === p3cur); });
   p3ubicar(); p3estado();
+}
+
+/* ---------- Aire acondicionado ---------- */
+const MODOS = ['Frío', 'Calor', 'Auto', 'Ventilar', 'Seco'];
+const VIENTOS = ['Auto', 'Baja', 'Media', 'Alta'];
+const POW = SVG('<path d="M12 3v9"/><path d="M6.3 6.8a8 8 0 1 0 11.4 0"/>');
+async function cargarAire(){
+  try { AIRE = await run('getAire', KEY); aireMsg = ''; }
+  catch(e) { if (clave(e)) return; aireMsg = 'No se pudo leer el aire'; }
+  pintarAire();
+}
+function pintarAire(){
+  const el = document.querySelector('#tablero .w-aire'); if (!el) return;
+  el.classList.toggle('off', !(AIRE && AIRE.power));
+  el.innerHTML = aireHTML();
+}
+function aireHTML(){
+  const a = AIRE;
+  if (!a) return '<div class="a-head"><div><div class="a-tit">Aire acondicionado</div><div class="a-est">' + (aireMsg || 'Cargando…') + '</div></div></div>';
+  return '<div class="a-head"><div><div class="a-tit">Aire acondicionado</div><div class="a-est">' +
+      (aireMsg || (a.power ? MODOS[a.mode] + ' · ventilador ' + VIENTOS[a.wind].toLowerCase() : 'Apagado')) + '</div></div>' +
+      '<button class="a-pow' + (a.power ? ' on' : '') + '" onclick="aireCambiar(\'power\',' + (a.power ? 0 : 1) + ')" aria-label="Prender o apagar el aire">' + POW + '</button></div>' +
+    '<div class="a-temp"><button class="rbtn" onclick="aireCambiar(\'temp\',' + (a.temp - 1) + ')" aria-label="Bajar temperatura">−</button>' +
+      '<div class="a-num">' + a.temp + '<small>°</small></div>' +
+      '<button class="rbtn" onclick="aireCambiar(\'temp\',' + (a.temp + 1) + ')" aria-label="Subir temperatura">+</button></div>' +
+    '<div class="a-fila"><span>Modo</span><div class="seg chico">' +
+      MODOS.map((m, i) => '<button class="' + (a.mode === i ? 'act' : '') + '" onclick="aireCambiar(\'mode\',' + i + ')">' + m + '</button>').join('') + '</div></div>' +
+    '<div class="a-fila"><span>Ventilador</span><div class="seg chico">' +
+      VIENTOS.map((m, i) => '<button class="' + (a.wind === i ? 'act' : '') + '" onclick="aireCambiar(\'wind\',' + i + ')">' + m + '</button>').join('') + '</div></div>';
+}
+function aireCambiar(campo, valor){
+  if (!AIRE || EDIT) return;
+  if (campo === 'temp') valor = Math.max(16, Math.min(30, valor));
+  AIRE[campo] = valor; aireMsg = 'Enviando…'; pintarAire();
+  clearTimeout(aireT);
+  aireT = setTimeout(async () => {
+    try { AIRE = Object.assign(AIRE, await run('setAire', KEY, AIRE)); aireMsg = ''; }
+    catch(e) { if (!clave(e)) aireMsg = 'No se pudo enviar: ' + e.message; }
+    pintarAire();
+  }, campo === 'temp' ? 700 : 0);
+}
+
+/* ---------- Televisor ---------- */
+const TV_BOTONES = [
+  ['Power', 'Encender', 'pw'], ['source', 'Fuente'], ['mute', 'Silencio'],
+  ['Volume-', 'Vol −'], ['Up', '▲'], ['Volume+', 'Vol +'],
+  ['Left', '◀'], ['OK', 'OK'], ['Right', '▶'],
+  ['Channel-', 'Canal −'], ['Down', '▼'], ['Channel+', 'Canal +'],
+  ['Menu', 'Menú'], ['', ''], ['exit', 'Salir']
+];
+function tvHTML(){
+  return '<div class="a-head"><div><div class="a-tit">Televisor</div><div class="a-est" id="tvMsg">Comedor</div></div></div>' +
+    '<div class="tv-grid">' + TV_BOTONES.map(b => '<button class="tvb' + (b[2] ? ' ' + b[2] : '') + '"' +
+      (b[0] ? ' onclick="tvTocar(this,\'' + b[0] + '\')"' : ' tabindex="-1" aria-hidden="true"') + '>' + b[1] + '</button>').join('') + '</div>';
+}
+async function tvTocar(btn, tecla){
+  if (EDIT) return;
+  btn.classList.add('press');
+  try { await run('tvTecla', KEY, tecla); }
+  catch(e) { if (!clave(e)) { const m = $('tvMsg'); if (m) { m.textContent = 'No se pudo enviar'; setTimeout(() => m.textContent = 'Comedor', 2500); } } }
+  setTimeout(() => btn.classList.remove('press'), 180);
 }
 
 /* ---------- Horarios ---------- */
@@ -985,6 +1086,8 @@ function pintarConfig(){
       '<div class="fila"><span>Mostrar clima</span>' + sw('dClima', DISENO.clima, 'Mostrar clima') + '</div>' +
       '<div class="fila"><span>Mostrar tránsito</span>' + sw('dTransito', DISENO.transito, 'Mostrar tránsito') + '</div>' +
       '<div class="fila"><span>Mostrar ambientes con foto</span>' + sw('dPlano', DISENO.plano, 'Mostrar ambientes') + '</div>' +
+      '<div class="fila"><span>Mostrar aire acondicionado</span>' + sw('dAire', DISENO.aire, 'Mostrar aire') + '</div>' +
+      '<div class="fila"><span>Mostrar televisor</span>' + sw('dTv', DISENO.tv, 'Mostrar televisor') + '</div>' +
       '<div class="fila"><span>Volver al orden original</span><button class="btn-sec" onclick="resetOrden()">Restablecer</button></div>' +
     '</div>' +
     '<div class="panel glass"><h3>Luces en la pantalla</h3><p>Elegí cuáles se ven en Inicio. Se guarda con "Guardar cambios".</p>' +
@@ -1038,6 +1141,8 @@ function pintarConfig(){
     $('p3tam').oninput = () => { c.tam = +$('p3tam').value; pinta(); p3aplicarEstilo(); p3guardar(); };
     $('p3op').oninput = () => { c.op = +$('p3op').value; pinta(); p3aplicarEstilo(); p3guardar(); };
   }
+  $('dAire').onchange = () => { DISENO.aire = $('dAire').checked; LS.set('diseno', DISENO); };
+  $('dTv').onchange = () => { DISENO.tv = $('dTv').checked; LS.set('diseno', DISENO); };
   $('dPlano').onchange = () => { DISENO.plano = $('dPlano').checked; LS.set('diseno', DISENO); };
   CASA.forEach(r => { const s = $('amb_' + r.id); if (s) s.onchange = async () => {
     Object.keys(AMBIENTES).forEach(k => { if (AMBIENTES[k] === r.id) delete AMBIENTES[k]; });
@@ -1128,7 +1233,7 @@ document.addEventListener('visibilitychange', mantenerEncendida);
 mantenerEncendida();
 
 /* ---------- Arranque y actualización ---------- */
-function iniciar(){ cargarLuces(); cargarClima(); cargarFondo(); cargarHorarios(); cargarAmbientes(); if (DESTINO && DISENO.transito) buscarRuta(DESTINO, true); }
+function iniciar(){ cargarLuces(); cargarClima(); cargarFondo(); cargarHorarios(); cargarAmbientes(); if (DISENO.aire) cargarAire(); if (DESTINO && DISENO.transito) buscarRuta(DESTINO, true); }
 fondoLocal();
 render();
 setInterval(reloj, 1000);
