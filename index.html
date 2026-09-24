@@ -423,7 +423,7 @@ async function run(fn, ...args){
   if (!API.startsWith('https://')) throw new Error('FALTA_MOTOR');
   let r;
   try { r = await fetch(API, { method: 'POST', body: JSON.stringify({ fn, args }) }); }
-  catch(e) { throw new Error('Sin conexión con el motor. Revisá internet o el link de Apps Script.'); }
+  catch(e) { throw new Error('SIN_MOTOR'); }
   const j = await r.json();
   if (!j.ok) throw new Error(j.error);
   return j.result;
@@ -1220,6 +1220,7 @@ function pedirMotor(msg){
 }
 function clave(e){
   if (String(e.message).includes('FALTA_MOTOR')) { pedirMotor('Pegá el link de tu Apps Script para empezar.'); return true; }
+  if (String(e.message).includes('SIN_MOTOR')) { pedirMotor('No se pudo conectar. Revisá el link del motor o tu internet.'); return true; }
   if (!String(e.message).includes('CLAVE_INCORRECTA')) return false;
   const habia = KEY; KEY = ''; guardarLocal('');
   $('kErr').textContent = habia ? 'Clave incorrecta. Probá de nuevo.' : '';
