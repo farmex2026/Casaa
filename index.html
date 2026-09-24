@@ -215,6 +215,33 @@
   .tvb.pw{color:#FF9C8C}
   .tvb:empty{visibility:hidden}
 
+  /* Pestaña 5D */
+  .c5-wrap{max-width:1320px;margin:auto;padding:16px 26px 40px}
+  .c5-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:16px}
+  .c5-st{padding:14px 16px;border-radius:18px;border:1px solid var(--edge);background:var(--glass)}
+  .c5-st small{display:block;color:var(--muted);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase}
+  .c5-st b{font-weight:400;font-size:1.5rem;display:block;margin-top:4px}
+  .c5-st span{color:var(--muted);font-size:.82rem}
+  .c5-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(250px,.85fr);gap:18px;align-items:start}
+  @media (max-width:900px){ .c5-grid{grid-template-columns:1fr} }
+  .c5-casa,.c5-panel{padding:16px}
+  .c5-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+  .c5-foto{position:relative;border-radius:18px;overflow:hidden;background:#0B1324;min-height:220px}
+  .c5-foto img{width:100%;display:block}
+  .c5-foto.vacio{display:grid;place-items:center;color:var(--muted);font-size:.9rem;text-align:center;padding:40px 20px;min-height:260px}
+  .c5-foto.vacio img{display:none}
+  .c5-mk{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;
+         border:1px solid rgba(124,192,255,.35);background:rgba(6,12,28,.62);color:#CFE6FF;cursor:pointer;z-index:2;white-space:nowrap;
+         font:600 var(--c5tam,12px) Outfit,system-ui,sans-serif;opacity:var(--c5op,.85);touch-action:none;user-select:none;-webkit-user-select:none}
+  .c5-mk svg{width:15px;height:15px}
+  .c5-mk.on{border-color:rgba(255,196,103,.6);background:rgba(50,34,10,.7);color:#FFD9A0;box-shadow:0 0 26px 6px rgba(255,196,103,.32)}
+  .c5-mk.busy{opacity:.45;pointer-events:none}
+  .c5-mk.moviendo{outline:1px dashed rgba(255,255,255,.7);outline-offset:3px}
+  .c5-fila{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--edge)}
+  .c5-fila:first-child{border-top:0}
+  .c5-fila small{display:block;color:var(--muted);font-size:.8rem;margin-top:2px}
+  .c5-fila.off-line{opacity:.45}
+
   /* Horarios */
   .tile{position:relative}
   .t-prog{position:absolute;top:10px;right:10px;width:40px;height:40px;border-radius:12px;border:0;background:transparent;color:var(--muted);display:grid;place-items:center;cursor:pointer}
@@ -311,6 +338,7 @@
   <div class="tabs glass" role="tablist">
     <button role="tab" id="tInicio" aria-selected="true" onclick="verTab('inicio')">Inicio</button>
     <button role="tab" id="tTres" aria-selected="false" onclick="verTab('tres')">3D</button>
+    <button role="tab" id="tCinco" aria-selected="false" onclick="verTab('cinco')">5D</button>
     <button role="tab" id="tConfig" aria-selected="false" onclick="verTab('config')">Configuración</button>
   </div>
 </div>
@@ -349,6 +377,22 @@
   </div>
 </section>
 
+<section id="cinco" hidden>
+  <div class="c5-wrap">
+    <div class="c5-stats" id="c5stats"></div>
+    <div class="c5-grid">
+      <div class="c5-casa glass">
+        <div class="c5-head"><span class="a-tit">Vista de la casa</span><span class="p-info" id="c5info"></span></div>
+        <div class="c5-foto" id="c5foto"><img id="c5img" alt="Vista de la casa"></div>
+      </div>
+      <div class="c5-panel glass">
+        <div class="c5-head"><span class="a-tit">Iluminación</span><button class="btn-sec" onclick="apagarTodo()">Apagar todas</button></div>
+        <div id="c5luces"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="config" hidden></section>
 
 <div id="modal" onclick="if(event.target===this)cerrarHorarios()"><div id="panel" class="glass" role="dialog" aria-modal="true"></div></div>
@@ -356,6 +400,10 @@
 <div id="login">
   <div class="glass">
     <h2>Casa</h2>
+    <div class="campo" id="campoApi" style="margin-top:0" hidden>
+      <label for="api">Link del motor (Apps Script, termina en /exec)</label>
+      <input class="inp" id="api" type="url" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="https://script.google.com/macros/s/.../exec">
+    </div>
     <div class="campo" style="margin-top:0">
       <label for="k">Clave para entrar</label>
       <input class="inp" id="k" type="password" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false">
@@ -368,12 +416,11 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-// ▼▼▼ Link de tu Apps Script (el que termina en /exec) ▼▼▼
-const API = 'https://script.google.com/macros/s/AKfycbz8QVcWQeW5L7j2mrZbivVQo50ZZBrjFAgwvur8deY8JWVLzWAHnQDlNfMo4BRfaCl0/exec';
-// ▲▲▲
+let API = '';
+try { API = localStorage.getItem('api_motor') || ''; } catch(e){}
 
 async function run(fn, ...args){
-  if (!API.startsWith('https://')) throw new Error('Falta pegar el link de Apps Script en index.html');
+  if (!API.startsWith('https://')) throw new Error('FALTA_MOTOR');
   let r;
   try { r = await fetch(API, { method: 'POST', body: JSON.stringify({ fn, args }) }); }
   catch(e) { throw new Error('Sin conexión con el motor. Revisá internet o el link de Apps Script.'); }
@@ -565,6 +612,7 @@ function render(){
   if (DISENO.transito) pintarTransito();
   if (DISENO.plano) pintarPlano();
   if (p3listo) p3estado();
+  if (c5listo && !$('cinco').hidden) pintar5D();
   reloj();
   const on = vis.filter(d => d.on).length;
   $('count').textContent = !devs ? '' : on ? on + ' de ' + vis.length + ' encendida' + (on > 1 ? 's' : '') : 'Todas apagadas';
@@ -854,6 +902,7 @@ async function cargarAire(){
 }
 function pintarAire(){
   if (p3listo) p3estado();
+  if (c5listo && !$('cinco').hidden) pintar5D();
   const el = document.querySelector('#tablero .w-aire'); if (!el) return;
   el.classList.toggle('off', !(AIRE && AIRE.power));
   el.innerHTML = aireHTML();
@@ -903,6 +952,101 @@ async function tvTocar(btn, tecla){
   try { await run('tvTecla', KEY, tecla); }
   catch(e) { if (!clave(e)) { const m = $('tvMsg'); if (m) { m.textContent = 'No se pudo enviar'; setTimeout(() => m.textContent = 'Comedor', 2500); } } }
   setTimeout(() => btn.classList.remove('press'), 180);
+}
+
+/* ---------- Pestaña 5D ---------- */
+let c5listo = false;
+const c5cfg = () => { if (!AMBIENTES._p5 || typeof AMBIENTES._p5 !== 'object') AMBIENTES._p5 = { pos:{} }; if (!AMBIENTES._p5.pos) AMBIENTES._p5.pos = {}; return AMBIENTES._p5; };
+function c5items(){
+  const l = (devs || []).filter(d => !d.hidden && d.sw).map(d => ({ k: d.id, n: d.name, on: !!d.on, tipo: 'luz', d }));
+  if (DISENO.aire) l.push({ k: 'aire', n: 'Aire', on: !!(AIRE && AIRE.power), tipo: 'aire' });
+  if (DISENO.tv) l.push({ k: 'tv', n: 'TV', on: !!(AMBIENTES._p3 && AMBIENTES._p3.tv), tipo: 'tv' });
+  return l;
+}
+function iniciar5D(){
+  if (!c5listo) {
+    c5listo = true;
+    $('c5img').addEventListener('load', c5ubicar);
+    $('c5img').addEventListener('error', () => $('c5foto').classList.add('vacio'));
+    $('c5img').src = 'fotos/casa3d.jpg';
+    $('c5foto').innerHTML += '';
+  }
+  pintar5D();
+}
+function pintar5D(){
+  if (!c5listo) return;
+  const items = c5items(), enc = items.filter(i => i.tipo === 'luz' && i.on).length;
+  const luces = items.filter(i => i.tipo === 'luz').length;
+  $('c5stats').innerHTML =
+    '<div class="c5-st"><small>Clima</small><b>' + (CLIMA ? CLIMA.temp + '°' : '—') + '</b><span>' + (CLIMA ? esc(CLIMA.desc) : 'Cargando') + '</span></div>' +
+    '<div class="c5-st"><small>Luces encendidas</small><b>' + enc + ' / ' + luces + '</b><span>' + (luces ? Math.round(enc * 100 / luces) : 0) + '% de las luces</span></div>' +
+    '<div class="c5-st"><small>Aire</small><b>' + (AIRE ? (AIRE.power ? AIRE.temp + '°' : 'Apagado') : '—') + '</b><span>' + (AIRE && AIRE.power ? MODOS[AIRE.mode] : 'En espera') + '</span></div>' +
+    '<div class="c5-st"><small>Hora</small><b>' + new Date().toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit', hour12:false}) + '</b><span>' + new Date().toLocaleDateString('es-AR', {weekday:'long', day:'numeric', month:'long'}) + '</span></div>';
+  // lista de la derecha
+  $('c5luces').innerHTML = items.map(i =>
+    '<div class="c5-fila' + (i.tipo === 'luz' && i.d && !i.d.online ? ' off-line' : '') + '"><div><div>' + esc(i.n) + '</div><small>' +
+    (i.tipo === 'luz' && i.d && !i.d.online ? 'Sin conexión' : i.on ? 'Encendida' : 'Apagada') + '</small></div>' +
+    sw('c5_' + i.k, i.on, i.n) + '</div>').join('');
+  items.forEach(i => { const s = $('c5_' + i.k); if (s) s.onchange = () => c5alternar(i.k); });
+  // marcadores sobre la imagen
+  const foto = $('c5foto');
+  [...foto.querySelectorAll('.c5-mk')].forEach(m => m.remove());
+  if (foto.classList.contains('vacio')) { foto.textContent = 'Subí la imagen de tu casa a GitHub como fotos/casa3d.jpg y recargá.'; return; }
+  const pos = c5cfg().pos;
+  items.forEach((i, n) => {
+    const m = document.createElement('div');
+    m.className = 'c5-mk' + (i.on ? ' on' : ''); m.dataset.k = i.k;
+    m.innerHTML = FOCO + '<span>' + esc(i.n) + '</span>';
+    const p = pos[i.k] || [18 + (n % 4) * 21, 20 + Math.floor(n / 4) * 22];
+    m.style.left = p[0] + '%'; m.style.top = p[1] + '%';
+    foto.appendChild(m); c5eventos(m);
+  });
+}
+function c5ubicar(){ $('c5foto').classList.remove('vacio'); pintar5D(); }
+async function c5alternar(k){
+  const m = $('c5foto').querySelector('.c5-mk[data-k="' + k + '"]');
+  if (m) m.classList.add('busy');
+  try {
+    if (k === 'aire') {
+      if (!AIRE) AIRE = { power: 0, mode: 0, temp: 24, wind: 0 };
+      AIRE = Object.assign(AIRE, await run('setAire', KEY, Object.assign({}, AIRE, { power: AIRE.power ? 0 : 1 })));
+      pintarAire();
+    } else if (k === 'tv') {
+      await run('tvTecla', KEY, 'Power');
+      const c = p3cfg(); c.tv = !c.tv; p3guardar();
+    } else {
+      const d = (devs || []).find(x => x.id === k);
+      if (d && d.online && d.sw) { await run('setPower', KEY, d.id, d.sw, !d.on); d.on = !d.on; render(); }
+    }
+  } catch(e) { clave(e); }
+  pintar5D();
+}
+const c5p = { t:null, mov:false, x:0, y:0, arr:false };
+function c5eventos(m){
+  const foto = $('c5foto');
+  m.addEventListener('pointerdown', e => {
+    e.preventDefault(); m.setPointerCapture(e.pointerId);
+    Object.assign(c5p, { x:e.clientX, y:e.clientY, mov:false, arr:false });
+    clearTimeout(c5p.t);
+    c5p.t = setTimeout(() => { c5p.arr = true; m.classList.add('moviendo'); try { navigator.vibrate && navigator.vibrate(25); } catch(_){} }, 500);
+  });
+  m.addEventListener('pointermove', e => {
+    if (!c5p.arr) { if (Math.hypot(e.clientX - c5p.x, e.clientY - c5p.y) > 8) { c5p.mov = true; clearTimeout(c5p.t); } return; }
+    const r = foto.getBoundingClientRect();
+    m.style.left = Math.max(0, Math.min(100, (e.clientX - r.left) / r.width * 100)) + '%';
+    m.style.top = Math.max(0, Math.min(100, (e.clientY - r.top) / r.height * 100)) + '%';
+  });
+  const soltar = e => {
+    clearTimeout(c5p.t);
+    if (c5p.arr) {
+      c5p.arr = false; m.classList.remove('moviendo');
+      c5cfg().pos[m.dataset.k] = [Math.round(parseFloat(m.style.left) * 10) / 10, Math.round(parseFloat(m.style.top) * 10) / 10];
+      p3guardar();
+    } else if (e.type === 'pointerup' && !c5p.mov) { c5alternar(m.dataset.k); }
+  };
+  m.addEventListener('pointerup', soltar);
+  m.addEventListener('pointercancel', soltar);
+  m.addEventListener('contextmenu', e => e.preventDefault());
 }
 
 /* ---------- Horarios ---------- */
@@ -1067,7 +1211,15 @@ $('tablero').addEventListener('contextmenu', e => e.preventDefault());
 $('inicio').addEventListener('click', e => { if (EDIT && !drag && !e.target.closest('.item')) salirEdicion(); });
 
 /* ---------- Clave de entrada ---------- */
+function pedirMotor(msg){
+  $('login').classList.add('show');
+  $('campoApi').hidden = false;
+  $('api').value = API;
+  $('kErr').textContent = msg || '';
+  $('api').focus();
+}
 function clave(e){
+  if (String(e.message).includes('FALTA_MOTOR')) { pedirMotor('Pegá el link de tu Apps Script para empezar.'); return true; }
   if (!String(e.message).includes('CLAVE_INCORRECTA')) return false;
   const habia = KEY; KEY = ''; guardarLocal('');
   $('kErr').textContent = habia ? 'Clave incorrecta. Probá de nuevo.' : '';
@@ -1075,23 +1227,34 @@ function clave(e){
   return true;
 }
 function entrar(){
+  if (!$('campoApi').hidden) {
+    const url = $('api').value.trim();
+    if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) { $('kErr').textContent = 'El link tiene que terminar en /exec'; return; }
+    API = url; try { localStorage.setItem('api_motor', API); } catch(e){}
+    $('campoApi').hidden = true;
+  }
   KEY = $('k').value.trim(); guardarLocal(KEY);
-  $('login').classList.remove('show');
+  $('login').classList.remove('show'); $('kErr').textContent = '';
   iniciar();
 }
 $('k').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+$('api').addEventListener('keydown', e => { if (e.key === 'Enter') entrar(); });
+if (!API) pedirMotor('Pegá el link de tu Apps Script para empezar.');
 
 /* ---------- Pestañas ---------- */
 function verTab(t){
   if (t !== 'inicio' && EDIT) salirEdicion();
   $('inicio').hidden = t !== 'inicio';
   $('tres').hidden = t !== 'tres';
+  $('cinco').hidden = t !== 'cinco';
   $('config').hidden = t !== 'config';
   $('barraNormal').style.visibility = t === 'inicio' ? '' : 'hidden';
   $('tInicio').setAttribute('aria-selected', t === 'inicio');
   $('tTres').setAttribute('aria-selected', t === 'tres');
+  $('tCinco').setAttribute('aria-selected', t === 'cinco');
   $('tConfig').setAttribute('aria-selected', t === 'config');
   if (t === 'tres') iniciar3D();
+  if (t === 'cinco') iniciar5D();
   if (t === 'config') puertaConfig();
   else { CFG = ''; cfgData = null; if (t === 'inicio') render(); }
 }
@@ -1150,6 +1313,11 @@ function pintarConfig(){
       '<div class="campo"><label for="p3op">Transparencia: <span id="p3opV"></span></label><input type="range" id="p3op" min="15" max="100"></div>' +
       '<div class="fila" style="border-top:0"><span>Posiciones del texto</span><button class="btn-sec" onclick="p3resetPos()">Volver al lugar original</button></div>' +
     '</div>' +
+    '<div class="panel glass"><h3>Motor</h3><p>Link de Apps Script de este equipo. No se guarda en GitHub.</p>' +
+      '<div class="campo" style="margin-top:0"><label for="apiCfg">Link (/exec)</label><input class="inp" id="apiCfg" type="url" autocomplete="off" spellcheck="false"></div>' +
+      '<button class="btn" style="margin-top:12px" onclick="guardarMotor()">Guardar link</button>' +
+      '<div class="nota" id="apiMsg"></div>' +
+    '</div>' +
     '<div class="panel glass"><h3>Clave para entrar</h3><p>Si la activás, la web la pide antes de mostrar las luces.</p>' +
       '<div class="fila"><span>Pedir clave</span>' + sw('on', c.on, 'Pedir clave para entrar') + '</div>' +
       '<div class="campo"><label for="nueva">Clave de entrada</label>' +
@@ -1171,7 +1339,7 @@ function pintarConfig(){
     '</div>' +
     '<button class="btn" onclick="guardarCfg()">Guardar cambios</button>' +
     '<div class="nota" id="cfgMsg"></div>';
-  $('nueva').value = c.clave; $('ciudad').value = c.ciudad; $('casa').value = c.casa || '';
+  $('nueva').value = c.clave; $('ciudad').value = c.ciudad; $('casa').value = c.casa || ''; $('apiCfg').value = API;
   try { const d = localStorage.getItem('fondo_data'); if (d) { $('prev').style.backgroundImage = 'url("' + d + '")'; $('prev').textContent = ''; } } catch(e){}
   $('osc').oninput = () => { $('oscV').textContent = $('osc').value + '%'; aplicarFondo(undefined, +$('osc').value); };
   $('dReloj').onchange = () => { DISENO.reloj = $('dReloj').checked; LS.set('diseno', DISENO); };
@@ -1197,6 +1365,13 @@ function pintarConfig(){
 }
 
 function p3resetPos(){ p3cfg().pos = {}; p3guardar(); if (p3listo) p3ubicar(); $('cfgMsg').className = 'nota ok'; $('cfgMsg').textContent = 'Posiciones restablecidas.'; }
+
+function guardarMotor(){
+  const url = $('apiCfg').value.trim(), m = $('apiMsg');
+  if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) { m.className = 'nota err'; m.textContent = 'El link tiene que terminar en /exec'; return; }
+  API = url; try { localStorage.setItem('api_motor', API); } catch(e){}
+  m.className = 'nota ok'; m.textContent = 'Link guardado en este equipo.'; iniciar();
+}
 
 function resetOrden(){ ORDEN = []; LS.set('orden_items', ORDEN); $('cfgMsg').className = 'nota ok'; $('cfgMsg').textContent = 'Orden restablecido.'; }
 
