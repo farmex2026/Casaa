@@ -416,13 +416,26 @@
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function equipoNombre_(){
+  const u = navigator.userAgent;
+  if (/iPad|Tablet/i.test(u)) return 'Tablet';
+  if (/iPhone|Android/i.test(u)) return 'Celular';
+  if (/Mac/i.test(u)) return 'Mac';
+  return 'PC';
+}
+let EQ = { id: '', n: '' };
+try {
+  EQ.id = localStorage.getItem('equipo_id') || '';
+  if (!EQ.id) { EQ.id = Math.random().toString(36).slice(2, 10); localStorage.setItem('equipo_id', EQ.id); }
+  EQ.n = localStorage.getItem('equipo_nombre') || equipoNombre_();
+} catch(e) { EQ = { id: 'temp', n: equipoNombre_() }; }
 let API = '';
 try { API = localStorage.getItem('api_motor') || ''; } catch(e){}
 
 async function run(fn, ...args){
   if (!API.startsWith('https://')) throw new Error('FALTA_MOTOR');
   let r;
-  try { r = await fetch(API, { method: 'POST', body: JSON.stringify({ fn, args }) }); }
+  try { r = await fetch(API, { method: 'POST', body: JSON.stringify({ fn, args, eq: EQ }) }); }
   catch(e) { throw new Error('SIN_MOTOR'); }
   const j = await r.json();
   if (!j.ok) throw new Error(j.error);
@@ -1314,6 +1327,12 @@ function pintarConfig(){
       '<div class="campo"><label for="p3op">Transparencia: <span id="p3opV"></span></label><input type="range" id="p3op" min="15" max="100"></div>' +
       '<div class="fila" style="border-top:0"><span>Posiciones del texto</span><button class="btn-sec" onclick="p3resetPos()">Volver al lugar original</button></div>' +
     '</div>' +
+    '<div class="panel glass"><h3>Equipos conectados</h3><p>Equipos que usaron la web. Se identifica cada uno por su nombre.</p>' +
+      '<div id="accLista">Cargando…</div>' +
+      '<div class="campo"><label for="eqN">Nombre de este equipo</label><input class="inp" id="eqN" type="text" autocomplete="off"></div>' +
+      '<div class="fila-btn"><button class="btn" onclick="guardarEquipo()">Guardar nombre</button><button class="btn-sec" onclick="limpiarAccesos()">Borrar lista</button></div>' +
+      '<div class="nota" id="accMsg"></div>' +
+    '</div>' +
     '<div class="panel glass"><h3>Motor</h3><p>Link de Apps Script de este equipo. No se guarda en GitHub.</p>' +
       '<div class="campo" style="margin-top:0"><label for="apiCfg">Link (/exec)</label><input class="inp" id="apiCfg" type="url" autocomplete="off" spellcheck="false"></div>' +
       '<button class="btn" style="margin-top:12px" onclick="guardarMotor()">Guardar link</button>' +
@@ -1341,6 +1360,7 @@ function pintarConfig(){
     '<button class="btn" onclick="guardarCfg()">Guardar cambios</button>' +
     '<div class="nota" id="cfgMsg"></div>';
   $('nueva').value = c.clave; $('ciudad').value = c.ciudad; $('casa').value = c.casa || ''; $('apiCfg').value = API;
+  $('eqN').value = EQ.n; pintarAccesos();
   try { const d = localStorage.getItem('fondo_data'); if (d) { $('prev').style.backgroundImage = 'url("' + d + '")'; $('prev').textContent = ''; } } catch(e){}
   $('osc').oninput = () => { $('oscV').textContent = $('osc').value + '%'; aplicarFondo(undefined, +$('osc').value); };
   $('dReloj').onchange = () => { DISENO.reloj = $('dReloj').checked; LS.set('diseno', DISENO); };
@@ -1366,6 +1386,33 @@ function pintarConfig(){
 }
 
 function p3resetPos(){ p3cfg().pos = {}; p3guardar(); if (p3listo) p3ubicar(); $('cfgMsg').className = 'nota ok'; $('cfgMsg').textContent = 'Posiciones restablecidas.'; }
+
+function hace_(t){
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 60) return 'recién';
+  if (s < 3600) return 'hace ' + Math.round(s / 60) + ' min';
+  if (s < 86400) return 'hace ' + Math.round(s / 3600) + ' h';
+  return new Date(t).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+}
+async function pintarAccesos(){
+  try {
+    const l = await run('getAccesos', KEY);
+    $('accLista').innerHTML = l.length ? l.map(a =>
+      '<div class="c5-fila"><div><div>' + esc(a.n) + (a.id === EQ.id ? ' (este equipo)' : '') + '</div>' +
+      '<small>' + hace_(a.t) + ' · ' + a.veces + ' usos</small></div></div>').join('')
+      : '<p class="sub">Todavía no hay registros.</p>';
+  } catch(e) { if (!clave(e)) $('accLista').textContent = 'No se pudo leer la lista'; }
+}
+function guardarEquipo(){
+  EQ.n = ($('eqN').value.trim() || equipoNombre_()).slice(0, 24);
+  try { localStorage.setItem('equipo_nombre', EQ.n); } catch(e){}
+  $('accMsg').className = 'nota ok'; $('accMsg').textContent = 'Nombre guardado.';
+  run('getAccesos', KEY).then(pintarAccesos).catch(() => {});
+}
+async function limpiarAccesos(){
+  try { await run('borrarAccesos', KEY); pintarAccesos(); $('accMsg').className = 'nota ok'; $('accMsg').textContent = 'Lista borrada.'; }
+  catch(e) { if (!clave(e)) { $('accMsg').className = 'nota err'; $('accMsg').textContent = e.message; } }
+}
 
 function guardarMotor(){
   const url = $('apiCfg').value.trim(), m = $('apiMsg');
